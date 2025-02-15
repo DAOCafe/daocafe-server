@@ -1,0 +1,105 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DEV=true
+    image: daoforum:latest
+    restart: "on-failure"
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./:/server
+      - media_volume:/vol/web/media
+      - static_volume:/vol/web/static
+    command: >
+      sh -c "
+            /py/bin/python manage.py wait_for_db &&
+            /py/bin/python manage.py makemigrations &&
+            /py/bin/python manage.py migrate &&
+            /py/bin/python manage.py create_periodic_task &&
+            /py/bin/python manage.py collectstatic --noinput &&
+            /py/bin/python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=secret
+      - ANKR_PROJECT_ID=${ANKR_PROJECT_ID}
+
+      - DEBUG=True
+
+  celery:
+    image: daoforum:latest
+    restart: always
+    command: >
+      sh -c "
+            /py/bin/python manage.py wait_for_db &&
+            watchmedo auto-restart --directory=./ --pattern='*.py' --recursive -- celery -A app worker --loglevel=info --pool=solo"
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=secret
+
+      - DEBUG=True
+    volumes:
+      - ./:/server
+  celery-beat:
+    image: daoforum:latest
+    restart: always
+    command: >
+      sh -c "
+            /py/bin/python manage.py wait_for_db &&
+            watchmedo auto-restart --directory=./ --pattern='*.py' --recursive -- celery -A app beat --loglevel=info"
+    depends_on:
+      - redis
+      - db
+      # add dependency on db to resolve for the issue
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=secret
+
+      - DEBUG=True
+    volumes:
+      - ./:/server
+      - celerybeat-schedule:/var/celery
+
+  db:
+    image: postgres:17.2-alpine3.21
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=secret
+
+      - DEBUG=True
+
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  db-data:
+  media_volume:
+  static_volume:
+  celerybeat-schedule:

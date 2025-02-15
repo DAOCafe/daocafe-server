@@ -1,0 +1,142 @@
+{
+  "dao_abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [{ "name": "", "type": "string" }],
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [{ "name": "", "type": "uint256" }],
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "name",
+      "outputs": [{ "name": "", "type": "string" }],
+      "type": "function"
+    }
+  ],
+  "staking_abi": [
+    {
+      "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "name": "stakedAmount",
+      "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "dip_abi": [
+    {
+      "name": "ProposalCreated",
+      "type": "event",
+      "anonymous": false,
+      "inputs": [
+        { "type": "uint256", "name": "proposalId", "indexed": true },
+        { "type": "uint8", "name": "proposalType", "indexed": false },
+        { "type": "address", "name": "token", "indexed": false },
+        { "type": "address", "name": "recipient", "indexed": false },
+        { "type": "uint256", "name": "amount", "indexed": false },
+        { "type": "uint8", "name": "contractToUpgrade", "indexed": false },
+        { "type": "string", "name": "newVersion", "indexed": false }
+      ]
+    },
+    {
+      "inputs": [],
+      "name": "proposalCount",
+      "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getProposal",
+      "outputs": [
+        {
+          "internalType": "enum IDAOBase.ProposalType",
+          "name": "proposalType",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "forVotes",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "againstVotes",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "endTime",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "executed",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getTransferData",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getUpgradeData",
+      "outputs": [
+        {
+          "internalType": "enum IDAOBase.UpgradeableContract",
+          "name": "contractToUpgrade",
+          "type": "uint8"
+        },
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "newVersion",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
+}
