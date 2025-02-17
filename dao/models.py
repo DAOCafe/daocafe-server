@@ -53,10 +53,6 @@ class Dao(models.Model):
         """returns all associated contracts for the dao object"""
         return self.dao_contracts.all()
 
-    @property
-    def staker_count(self):
-        return self.dao_stakers.count()
-
 
 class Contract(models.Model):
     dao_address = models.CharField(max_length=42, null=False, blank=False)

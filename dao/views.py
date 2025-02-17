@@ -14,6 +14,7 @@ from .packages.abstract.abstract_views import (
     BaseDaoView,
     PublicBaseDaoView,
 )
+from django.db.models import When, Case, Sum, Count, F
 from logging_config import logger
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
@@ -93,6 +94,16 @@ class ActiveDaosView(PublicBaseDaoView):
     supports: list, retrieve for all users
     """
 
-    queryset = Dao.objects.filter(is_active=True)
     serializer_class = DaoActiveSerializer
     lookup_field = "slug"
+
+    def get_queryset(self):
+        return Dao.objects.filter(is_active=True).annotate(
+            staker_count=Count("dao_stakers"),
+            total_staked=Sum("dao_stakers__amount"),
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context

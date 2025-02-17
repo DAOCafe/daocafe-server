@@ -8,7 +8,7 @@ from .packages.services.dao_service import DaoService
 from .packages.services.stake_service import StakeService
 from services.blockchain.dao_service import DaoConfirmationService
 from django.forms.models import model_to_dict
-
+from django.db.models import Sum
 from logging_config import logger
 
 # DAO/DAO DEPLOYMENT SERIALIZERS
@@ -190,7 +190,10 @@ class DaoCompleteSerializer(serializers.ModelSerializer):
 
 class DaoActiveSerializer(serializers.ModelSerializer):
     contracts = serializers.SerializerMethodField()
-    staker_count = serializers.IntegerField()
+    has_staked = serializers.SerializerMethodField()
+
+    staker_count = serializers.DecimalField(max_digits=32, decimal_places=0)
+    total_staked = serializers.DecimalField(max_digits=32, decimal_places=0)
 
     class Meta:
         model = Dao
@@ -210,28 +213,12 @@ class DaoActiveSerializer(serializers.ModelSerializer):
             "symbol",
             "total_supply",
             "version",
-            "staker_count",
-            "contracts",
-        ]
-        read_only_fields = [
-            "description",
-            "dao_image",
-            "cover_image",
-            "slug",
-            "socials",
-            "owner",
-            "created_at",
-            "updated_at",
-            "dip_count",
-            "dao_name",
-            "token_name",
-            "network",
-            "symbol",
-            "total_supply",
-            "version",
             "contracts",
             "staker_count",
+            "total_staked",
+            "has_staked",
         ]
+        read_only_fields = fields
 
     def get_contracts(self, obj):
         return [
@@ -244,8 +231,19 @@ class DaoActiveSerializer(serializers.ModelSerializer):
             for contract in obj.contracts
         ]
 
-    def get_staker_count(self, obj):
-        return {"staker_count": obj.staker_count}
+    def get_has_staked(self, obj):
+        request = self.context["request"]
+        logger.info(
+            f"entered serializermethodfield, request: {request}, user: {request.user}"
+        )
+        if request and request.user.is_authenticated:
+            logger.info("user authenticated")
+            return (
+                obj.dao_stakers.filter(user=request.user).aggregate(
+                    total=Sum("amount")
+                )["total"]
+                or 0
+            )
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
