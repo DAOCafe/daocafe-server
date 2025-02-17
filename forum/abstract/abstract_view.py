@@ -49,3 +49,8 @@ class BaseTransactionDip(
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ): ...
+
+
+class BaseVoters(
+    Helper, CustomParserPaginationMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+): ...

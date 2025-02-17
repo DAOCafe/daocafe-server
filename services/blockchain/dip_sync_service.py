@@ -34,13 +34,22 @@ class DipSyncronizationService:
         try:
             db_proposal_data = db_data.proposal_data
 
-            db_amount = float(db_proposal_data["amount"])
+            db_amount = int(db_proposal_data["amount"])
+            logger.debug(f"type from chain: {type(blockchain_data['amount'])}")
+            logger.error("entered compare func")
+            logger.debug(f"data from chain: {blockchain_data}")
+            logger.debug(f"data from draft: {db_proposal_data}")
 
-            return (
+            result = (
                 blockchain_data["token"] == db_proposal_data["token"]
-                and blockchain_data["recipient"] == db_proposal_data["recipient"]
+                and blockchain_data["recipient"].lower()
+                == db_proposal_data["recipient"].lower()
                 and blockchain_data["amount"] == db_amount
             )
+            if result:
+                logger.info(f"comparison true: {result}")
+            logger.info(f"result = {result}")
+            return result
         except Exception as ex:
             logger.debug(f"error in compare_proposal_data: {str(ex)}")
             return False
@@ -81,6 +90,7 @@ class DipSyncronizationService:
                             db_data=draft_dip,
                         ):
                             matching_dip = draft_dip
+                            logger.debug(f"found matching dip: {matching_dip}")
                             break
 
                     if matching_dip:

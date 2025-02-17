@@ -19,6 +19,7 @@ class StakeService:
         staked_amount = blockchain_service.read_staked_amount(
             staking_address=staking_address, user_address=user.eth_address
         )
+        # ADD Voting power fetch getVotingPower TODO
         stake = Stake.objects.filter(user=user, dao=dao).first()
 
         if not stake:

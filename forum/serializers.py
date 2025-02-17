@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from logging_config import logger
 from .services.vote_service import VoteService
 from .abstract.abstract_models import ProposalType
+from django.contrib.auth import get_user_model
 
 
 class LexicalContentValidator:
@@ -161,7 +162,6 @@ class ThreadDetailSerializer(ThreadSerializer):
 class DipSerializer(BaseForumSerializer):
     proposal_data = serializers.JSONField(required=True)
     proposal_type = serializers.CharField()
-    total_votes = serializers.IntegerField(source="total_voting_power", read_only=True)
 
     class Meta(BaseForumSerializer.Meta):
         model = Dip
@@ -182,7 +182,6 @@ class DipSerializer(BaseForumSerializer):
             "likes_count",
             "is_liked",
             "dao",
-            "total_votes",
         ]
         read_only_fields = [
             "id",
@@ -205,7 +204,6 @@ class DipSerializer(BaseForumSerializer):
         return value
 
     def validate(self, data):
-        logger.debug(f"data from validate in serializer: {data}")
 
         amount = data.get("proposal_data", {}).get("amount")
         amount = int(amount) * 10**18
@@ -230,6 +228,10 @@ class DipSerializer(BaseForumSerializer):
         proposal_data = representation["proposal_data"]
         proposal_data["for_votes"] = getattr(instance, "for_votes", 0)
         proposal_data["against_votes"] = getattr(instance, "against_votes", 0)
+        proposal_data["total_votes"] = (
+            proposal_data["for_votes"] + proposal_data["against_votes"]
+        )
+
         representation["proposal_data"] = proposal_data
         return representation
 
@@ -279,11 +281,32 @@ class DipRefreshSerializer(serializers.ModelSerializer):
             )
 
 
+class DipSingleRefreshSerializer(serializers.ModelSerializer): ...
+
+
 class DipDetailSerializer(DipSerializer):
     replies = ReplySerializer(many=True, read_only=True)
 
     class Meta(DipSerializer.Meta):
-        fields = DipSerializer.Meta.fields + ["replies"]
+        fields = DipSerializer.Meta.fields + [
+            "replies",
+        ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            user_vote = instance.votes.filter(user=request.user).first()
+            if user_vote:
+                representation["user_vote"] = {
+                    "has_voted": True,
+                    "support": user_vote.support,
+                    "voting_power": user_vote.voting_power,
+                }
+            else:
+                representation["user_vote"] = {"has_voted": False}
+
+            return representation
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -323,8 +346,20 @@ class VoteSerializer(serializers.ModelSerializer):
 
 
 class VotingHistorySerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Vote
         fields = "__all__"
-        read_only_fields = fields
+        read_only_fields = [
+            "id",
+            "dip",
+            "user",
+            "support",
+            "voting_power",
+        ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        user = get_object_or_404(get_user_model(), id=representation["user"])
+        representation["user"] = user.nickname
+        representation.pop("dip", None)
+        return representation

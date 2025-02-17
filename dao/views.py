@@ -63,7 +63,6 @@ class StakeView(BaseDaoView):
         context["slug"] = self.request.data.get("dao_slug")
         context["dao_id"] = self.request.data.get("id")
         context["user"] = self.request.user
-        logger.info(f"payload: {context}")
         return context
 
     @extend_schema(

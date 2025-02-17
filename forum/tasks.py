@@ -77,7 +77,7 @@ def sync_proposals_task(self, dao_id: int):
 @shared_task(
     bind=True,
     max_retries=3,
-    default_retry_delay=3,
+    default_retry_delay=5,
     autoretry_for=(Exception,),
     name="blockchain.sync_votes",
 )
@@ -99,3 +99,13 @@ def sync_votes_task(self, proposal_id):
     except Exception as ex:
         logger.error(f"async task failed: {str(ex)}")
         raise self.retry(exc=ex)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=5,
+    autoretry_for=(Exception,),
+    name="blockchain.sync_dip_status",
+)
+def sync_dip_status(self, proposal_id): ...

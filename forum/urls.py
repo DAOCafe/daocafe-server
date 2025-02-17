@@ -10,6 +10,7 @@ from .views import (
     ReplyLikeView,
     ThreadLikeView,
     VoteSynchronizationView,
+    VotingHistoryView,
 )
 
 app_name = "forum"
@@ -71,6 +72,14 @@ vote_router.register(
     basename="vote",
 )
 
+voting_history_router = DefaultRouter()
+
+voting_history_router.register(
+    r"(?P<slug>[^/.]+)/dips/(?P<id>\d+)/voters",
+    VotingHistoryView,
+    basename="voting-history",
+)
+
 urlpatterns = [
     path("", include(thread_router.urls)),
     path("", include(thread_like_router.urls)),
@@ -80,4 +89,5 @@ urlpatterns = [
     path("", include(dip_like_router.urls)),
     path("", include(dip_replies_router.urls)),
     path("", include(dip_reply_like_router.urls)),
+    path("", include(voting_history_router.urls)),
 ]

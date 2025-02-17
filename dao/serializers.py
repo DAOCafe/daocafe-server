@@ -105,6 +105,15 @@ class StakeSerializer(serializers.ModelSerializer):
         )
         return stake
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop("dao", None)
+        user = instance.user
+        representation["user"] = user.nickname
+        representation["eth_address"] = user.eth_address
+        representation["image"] = user.image.url if user.image else None
+        return representation
+
 
 class DaoCompleteSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()

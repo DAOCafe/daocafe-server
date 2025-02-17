@@ -5,7 +5,7 @@ from django.db.models import F
 from django.db import transaction
 import logging
 from drf_spectacular.utils import extend_schema
-from django.db.models import Count, When, Case, IntegerField, Sum
+from django.db.models import When, Case, IntegerField, Sum
 
 
 logger = logging.getLogger(__name__)
@@ -13,9 +13,11 @@ logging.basicConfig(level=logging.INFO)
 
 # CUSTOM CLASSES
 from .abstract.abstract_view import (
+    BaseVoters,
     BaseForumView,
     BaseReplyView,
     BaseLikeView,
+    BaseTransactionDip,
     BaseTransactionDip,
 )
 from .serializers import (
@@ -27,6 +29,8 @@ from .serializers import (
     ReplySerializer,
     LikeSerializer,
     VoteSerializer,
+    VotingHistorySerializer,
+    DipSingleRefreshSerializer,
     serializers,
 )
 from .models import Thread, Dip, DipStatus, Reply, Like, View, Vote
@@ -106,18 +110,21 @@ class DipView(BaseContentView):
         return (
             Dip.objects.filter(dao__slug=dao_slug, status=DipStatus.ACTIVE)
             .annotate(
-                for_votes=Count(
+                for_votes=Sum(
                     Case(
-                        When(votes__support=True, then=1), output_field=IntegerField()
+                        When(votes__support=True, then=F("votes__voting_power")),
+                        default=0,
+                        output_field=IntegerField(),
                     ),
                 ),
-                against_votes=Count(
+                against_votes=Sum(
                     Case(
-                        When(votes__support=False, then=1), output_field=IntegerField()
+                        When(votes__support=False, then=F("votes__voting_power")),
+                        default=0,
+                        output_field=IntegerField(),
                     )
                 ),
             )
-            .annotate(total_voting_power=Sum("votes__voting_power"))
             .order_by("-proposal_id")
         )
 
@@ -147,6 +154,20 @@ class DipSyncronizationView(BaseTransactionDip):
             {"message": "sync started"},
             status=status.HTTP_200_OK,
         )
+
+
+class DipSingleSyncronizationView(BaseTransactionDip):
+    serializer_class = DipSingleRefreshSerializer
+
+    def get_queryset(self):
+        dip_id = self.kwargs.get("id")
+        return Dip.objects.filter(id=dip_id)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["slug"] = self.kwargs.get("slug")
+        context["dip_id"] = self.kwargs.get("id")
+        return context
 
 
 class BaseReplyContentView(BaseReplyView):
@@ -280,3 +301,19 @@ class VoteSynchronizationView(BaseTransactionDip):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"msg": "started sync process"}, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["dip"])
+class VotingHistoryView(BaseVoters):
+    serializer_class = VotingHistorySerializer
+
+    def get_queryset(self):
+        context = self.get_serializer_context()
+        dip_id = context["id"]
+
+        return Vote.objects.filter(id=dip_id).all()
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["id"] = self.kwargs.get("id")
+        return context
