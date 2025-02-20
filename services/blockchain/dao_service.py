@@ -1,13 +1,30 @@
 from web3 import Web3
-
-# from eth_abi import decode
 from logging_config import logger
 from .blockchain_client import BlockchainClient
-from django.conf import settings
 from rest_framework import status
 
 
+# Factory addresses for different networks
+FACTORY_ADDRESSES = {
+    1: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Mainnet (placeholder)
+    5: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Goerli (placeholder)
+    10: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Optimism (placeholder)
+    56: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # BSC (placeholder)
+    137: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Polygon (placeholder)
+    42161: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Arbitrum (placeholder)
+    11155111: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Sepolia (placeholder)
+    1337: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",  # Local Hardhat
+}
+
+
 class DaoConfirmationService(BlockchainClient):
+    @staticmethod
+    def get_factory_address(network: int) -> str:
+        """Get the DAO Factory address for the specified network"""
+        if network not in FACTORY_ADDRESSES:
+            raise ValueError(f"No factory address configured for network {network}")
+        return FACTORY_ADDRESSES[network]
+
     help = """class designed for blockchain interaction.
     serves to get the dao-specific on-chain data.
     reads on-chain staking amount """
@@ -35,7 +52,7 @@ class DaoConfirmationService(BlockchainClient):
         filter_params = {
             "fromBlock": self.from_block,
             "toBlock": self.current_block,
-            "address": Web3.to_checksum_address(settings.DAO_FACTORY_ADDRESS),
+            "address": Web3.to_checksum_address(self.get_factory_address(self.network)),
             "topics": [
                 Web3.to_hex(hexstr=event_signature),
                 "0x" + Web3.to_checksum_address(self.dao_address).lower()[2:].zfill(64),
@@ -102,12 +119,21 @@ class DaoConfirmationService(BlockchainClient):
         user_address = Web3.to_checksum_address(user_address)
 
         abi = self.get_abi("staking_abi")
-
         contract = self.web3.eth.contract(address=staking_address, abi=abi)
 
         staked_amount = contract.functions.stakedAmount(user_address).call()
-
         return staked_amount
+
+    def read_voting_power(self, staking_address, user_address) -> dict:
+        """Read the voting power for a user from the staking contract"""
+        staking_address = Web3.to_checksum_address(staking_address)
+        user_address = Web3.to_checksum_address(user_address)
+
+        abi = self.get_abi("staking_abi")
+        contract = self.web3.eth.contract(address=staking_address, abi=abi)
+
+        voting_power = contract.functions.getVotingPower(user_address).call()
+        return voting_power
 
     def read_votes(self, proposal_id) -> list:
 

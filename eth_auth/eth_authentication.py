@@ -55,21 +55,37 @@ class SignatureVerifier:
     ) -> bool:
         """verify that the signature was signed by the address owner"""
         try:
+            print(f"Starting signature verification for address: {eth_address}")
+            print(f"Message to verify: {message}")
+            
             cache_key = f"{NonceManager.NONCE_PREFIX}{eth_address.lower()}"
             stored_data = cache.get(cache_key)
             if not stored_data:
+                print("Verification failed: No stored nonce data found in cache")
                 return False
 
             stored_nonce, timestamp = stored_data
+            print(f"Retrieved stored nonce: {stored_nonce}, timestamp: {timestamp}")
 
             if any(str(item) not in message for item in [stored_nonce, timestamp]):
+                print("Verification failed: Message does not contain correct nonce or timestamp")
                 return False
+
+            print("Attempting to recover address from signature...")
             w3 = Web3()
             message_hash = encode_defunct(text=message)
             recovered_address = w3.eth.account.recover_message(
                 message_hash, signature=signature
             )
+            print(f"Recovered address: {recovered_address}")
+            print(f"Expected address: {eth_address}")
 
-            return recovered_address.lower() == eth_address.lower()
+            result = recovered_address.lower() == eth_address.lower()
+            if not result:
+                print("Verification failed: Recovered address does not match expected address")
+            else:
+                print("Signature verification successful!")
+            return result
         except Exception as ex:
+            print(f"Verification failed with exception: {str(ex)}")
             return False

@@ -19,22 +19,50 @@ class BlockchainClient:
 
     def connect(self):
         provider_url = self.get_provider(self.network)
+        # Log the provider URL with redacted API key if present
+        logged_url = provider_url
         if "api_key" in provider_url:
             provider_url = provider_url.format(
                 api_key=os.environ.get("ANKR_PROJECT_ID")
             )
+            logged_url = provider_url.split("api_key=")[0] + "api_key=***"
+        
+        logger.info(f"Attempting to connect to network {self.network} using provider: {logged_url}")
+        
+        if "api_key" in provider_url and not os.environ.get("ANKR_PROJECT_ID"):
+            logger.error("ANKR_PROJECT_ID environment variable is not set")
+            raise ConnectionError("ANKR_PROJECT_ID environment variable is required but not set")
 
         web3 = None
         for attempt in range(1, self.retries + 1):
-            web3 = Web3(Web3.HTTPProvider(provider_url))
-            if web3.is_connected():
-                logger.info(f"connection with chain {self.network} established")
-                return web3
+            logger.info(f"Connection attempt {attempt}/{self.retries}")
+            try:
+                provider = Web3.HTTPProvider(provider_url)
+                # Try to make an actual request to test the connection
+                try:
+                    response = provider.make_request("eth_blockNumber", [])
+                    if "error" in response:
+                        logger.warning(f"Connection attempt {attempt} failed: RPC error: {response['error']}")
+                        raise ConnectionError(f"RPC error: {response['error']}")
+                except Exception as rpc_error:
+                    logger.warning(f"Connection attempt {attempt} failed with RPC error: {str(rpc_error)}")
+                    raise
 
-            logger.warning(f"connection {attempt} failed")
-            time.sleep(self.delay)
-        logger.error(f"failed to connect to network {self.network}")
-        raise ConnectionError(f"could not connect to network {self.network}")
+                web3 = Web3(provider)
+                if web3.is_connected():
+                    logger.info(f"Connection with chain {self.network} established successfully")
+                    return web3
+                else:
+                    logger.warning(f"Connection attempt {attempt} failed: Web3 could not connect to RPC endpoint")
+            except Exception as e:
+                logger.warning(f"Connection attempt {attempt} failed with error details: {type(e).__name__}: {str(e)}")
+            
+            if attempt < self.retries:
+                logger.info(f"Waiting {self.delay} seconds before next attempt...")
+                time.sleep(self.delay)
+        
+        logger.error(f"Failed to connect to network {self.network} after {self.retries} attempts")
+        raise ConnectionError(f"Could not connect to network {self.network} after {self.retries} attempts")
 
     @staticmethod
     def get_provider(network):
@@ -46,6 +74,7 @@ class BlockchainClient:
             137: "https://polygon-mainnet.infura.io/v3/{api_key}",
             42161: "https://arbitrum-mainnet.infura.io/v3/{api_key}",
             11155111: "https://rpc.ankr.com/eth_sepolia/{api_key}",
+            1337: "http://host.docker.internal:8545",
         }
 
         if network not in provider_urls:

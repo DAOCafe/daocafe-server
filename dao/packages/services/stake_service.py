@@ -19,25 +19,25 @@ class StakeService:
         staked_amount = blockchain_service.read_staked_amount(
             staking_address=staking_address, user_address=user.eth_address
         )
-        # ADD Voting power fetch getVotingPower TODO
+        voting_power = blockchain_service.read_voting_power(
+            staking_address=staking_address, user_address=user.eth_address
+        )
+        
         stake = Stake.objects.filter(user=user, dao=dao).first()
 
         if not stake:
             stake = Stake.objects.create(
                 amount=staked_amount,
+                voting_power=voting_power,
                 user=user,
                 dao=dao,
             )
         else:
             stake.amount = staked_amount
+            stake.voting_power = voting_power
             stake.save()
 
-        stake_dict = stake.__dict__
-
-        stake_dict.pop("id", None)
-        stake_dict.pop("user", None)
-        stake_dict.pop("dao", None)
-        return stake_dict
+        return stake
 
     @staticmethod
     def has_staked_amount(user, dao):

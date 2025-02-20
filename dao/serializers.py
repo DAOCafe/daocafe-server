@@ -190,10 +190,8 @@ class DaoCompleteSerializer(serializers.ModelSerializer):
 
 class DaoActiveSerializer(serializers.ModelSerializer):
     contracts = serializers.SerializerMethodField()
-    has_staked = serializers.SerializerMethodField()
-
-    staker_count = serializers.DecimalField(max_digits=32, decimal_places=0)
-    total_staked = serializers.DecimalField(max_digits=32, decimal_places=0)
+    stake = serializers.SerializerMethodField()
+    user_stake = serializers.SerializerMethodField()
 
     class Meta:
         model = Dao
@@ -214,9 +212,8 @@ class DaoActiveSerializer(serializers.ModelSerializer):
             "total_supply",
             "version",
             "contracts",
-            "staker_count",
-            "total_staked",
-            "has_staked",
+            "stake",
+            "user_stake",
         ]
         read_only_fields = fields
 
@@ -231,19 +228,25 @@ class DaoActiveSerializer(serializers.ModelSerializer):
             for contract in obj.contracts
         ]
 
-    def get_has_staked(self, obj):
+    def get_stake(self, obj):
+        return {
+            "staker_count": str(obj.staker_count),
+            "total_staked": str(obj.total_staked)
+        }
+
+    def get_user_stake(self, obj):
         request = self.context["request"]
-        logger.info(
-            f"entered serializermethodfield, request: {request}, user: {request.user}"
-        )
         if request and request.user.is_authenticated:
-            logger.info("user authenticated")
-            return (
-                obj.dao_stakers.filter(user=request.user).aggregate(
-                    total=Sum("amount")
-                )["total"]
-                or 0
-            )
+            stake = obj.dao_stakers.filter(user=request.user).first()
+            if stake:
+                return {
+                    "has_staked": str(stake.amount),
+                    "voting_power": str(stake.voting_power)
+                }
+        return {
+            "has_staked": "0",
+            "voting_power": "0"
+        }
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -264,5 +267,9 @@ class DaoActiveSerializer(serializers.ModelSerializer):
                     "cover_image",
                 ]
             ]
+
+        # Ensure total_supply is a string
+        if "total_supply" in representation:
+            representation["total_supply"] = str(representation["total_supply"])
 
         return representation

@@ -61,8 +61,14 @@ class StakeView(BaseDaoView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["slug"] = self.request.data.get("dao_slug")
-        context["dao_id"] = self.request.data.get("id")
+        if self.request.method == 'POST':
+            # For POST: Get params from request body
+            context["dao_id"] = self.request.data.get("id")
+            context["slug"] = self.request.data.get("dao_slug")
+        else:
+            # For GET: Get params from query string
+            context["dao_id"] = self.request.GET.get("id")
+            context["slug"] = self.request.GET.get("slug")
         context["user"] = self.request.user
         return context
 

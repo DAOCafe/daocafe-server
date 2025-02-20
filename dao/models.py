@@ -73,6 +73,7 @@ class Contract(models.Model):
 
 class Stake(models.Model):
     amount = models.DecimalField(max_digits=32, null=False, decimal_places=0)
+    voting_power = models.DecimalField(max_digits=32, null=False, decimal_places=0, default=0)
     # foreign keys
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     dao = models.ForeignKey(
