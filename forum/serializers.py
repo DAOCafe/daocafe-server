@@ -14,6 +14,8 @@ from logging_config import logger
 from .services.vote_service import VoteService
 from .abstract.abstract_models import ProposalType
 from django.contrib.auth import get_user_model
+from .services.status_service import UpdateStatus
+from .tasks import sync_votes_task
 
 
 class LexicalContentValidator:
@@ -281,7 +283,11 @@ class DipRefreshSerializer(serializers.ModelSerializer):
             )
 
 
-class DipSingleRefreshSerializer(serializers.ModelSerializer): ...
+class DipSingleRefreshSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dip
+        fields = ["id", "proposal_id", "status"]
+        read_only_fields = fields
 
 
 class DipDetailSerializer(DipSerializer):
@@ -321,28 +327,6 @@ class VoteSerializer(serializers.ModelSerializer):
         model = Vote
         fields = ["id", "support", "dip", "user"]
         read_only_fields = ["id", "support", "dip", "user"]
-
-    def validate(self, data):
-        dip = get_object_or_404(Dip, id=self.context["id"])
-        logger.info(f"dip: {dip}")
-        if not dip or not dip.status == DipStatus.ACTIVE:
-            raise serializers.ValidationError("dip cannot be casted vote on")
-        data["dip"] = dip
-        return data
-
-    def validate_support(self, value):
-        if not value:
-            raise serializers.ValidationError("no vote provided")
-        if not isinstance(value, bool):
-            raise serializers.ValidationError("vote must be of bool type")
-        return value
-
-    def create(self, validated_data):
-        logger.critical("reached create")
-        votes = VoteService().create_vote_instance(dip=validated_data["dip"])
-        logger.debug(f"votes: {votes}")
-
-        return votes
 
 
 class VotingHistorySerializer(serializers.ModelSerializer):

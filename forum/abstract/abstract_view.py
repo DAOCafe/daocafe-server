@@ -51,6 +51,10 @@ class BaseTransactionDip(
 ): ...
 
 
+class BaseDipStatusUpdate(Helper, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ["patch"]
+
+
 class BaseVoters(
     Helper, CustomParserPaginationMixin, mixins.ListModelMixin, viewsets.GenericViewSet
 ): ...

@@ -28,9 +28,19 @@ class DipConfirmationService(BlockchainClient):
                         f"failed to get proposal count after {self.retries} attempts"
                     ) from ex
 
-    def get_proposals(self, excluded_proposals=None) -> list:
+    def get_proposals(self, excluded_proposals=None, proposal_id=None) -> dict | list:
         excluded_proposals = excluded_proposals or set()
         count, contract = self.get_proposal_count()
+        if proposal_id is not None:
+            proposal_data = contract.functions.getProposal(proposal_id).call()
+            return {
+                "proposal_id": proposal_id,
+                "proposal_type": proposal_data[0],
+                "for_votes": proposal_data[1],
+                "against_votes": proposal_data[2],
+                "end_time": proposal_data[3],
+                "executed": proposal_data[4],
+            }
         proposals = []
         for proposal_id in range(count, -1, -1):
             if proposal_id in excluded_proposals:

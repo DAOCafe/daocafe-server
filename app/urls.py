@@ -7,9 +7,9 @@ from drf_spectacular.views import (
 )
 from django.conf import settings
 from django.conf.urls.static import static
-from forum.views import DipSyncronizationView
+from forum.views import DipSyncronizationView, DipSingleSyncronizationView
 
-from dao.views import StakeView, ActiveDaosView
+from dao.views import StakeView
 from forum.urls import vote_router
 
 api_urlpatterns = [
@@ -19,11 +19,6 @@ api_urlpatterns = [
     path("user/", include("user.urls")),
     # dao-related endpoints
     path("dao", include("dao.urls")),
-    path(
-        "dao/<slug:slug>/info",
-        ActiveDaosView.as_view({"get": "retrieve"}),
-        name="daos-retrieve",
-    ),
     path("dao/", include("forum.urls")),
     path(
         "refresh/stake/",
@@ -37,6 +32,11 @@ api_urlpatterns = [
         name="refresh-dips",
     ),
     path("", include(vote_router.urls)),
+    path(
+        "refresh/dip/<int:pk>/status/",
+        DipSingleSyncronizationView.as_view({"patch": "update"}),
+        name="refresh-status",
+    ),
 ]
 
 urlpatterns = [

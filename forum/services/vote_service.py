@@ -34,7 +34,8 @@ class VoteService:
         votes_from_chain = blockchain_service.start_vote_sync_process(dip.proposal_id)
 
         if votes_from_chain is None:
-            raise Exception("vote does not exist on chain")
+            logger.info(f"no votes found on chain for proposal: {dip.proposal_id}")
+            return []
 
         created_votes = []
 
@@ -42,7 +43,7 @@ class VoteService:
             for vote in votes_from_chain:
                 user = VoteService._create_user(vote["voter_address"])
 
-                vote, _ = Vote.objects.get_or_create(
+                vote, created = Vote.objects.get_or_create(
                     dip=dip,
                     user=user,
                     defaults={

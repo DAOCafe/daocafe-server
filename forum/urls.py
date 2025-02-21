@@ -5,6 +5,7 @@ from .views import (
     ThreadView,
     ThreadReplyView,
     DipView,
+    DipSingleSyncronizationView,
     DipLikeView,
     DipReplyView,
     ReplyLikeView,
@@ -46,6 +47,7 @@ thread_reply_like_router.register(
 dip_router = DefaultRouter()
 dip_router.register(r"(?P<slug>[^/.]+)/dips", DipView, basename="dip-create")
 
+
 dip_like_router = DefaultRouter()
 dip_like_router.register(
     r"(?P<slug>[^/.]+)/dips/(?P<id>\d+)/like", DipLikeView, basename="dip-like"
@@ -72,6 +74,7 @@ vote_router.register(
     basename="vote",
 )
 
+
 voting_history_router = DefaultRouter()
 
 voting_history_router.register(
@@ -79,6 +82,7 @@ voting_history_router.register(
     VotingHistoryView,
     basename="voting-history",
 )
+
 
 urlpatterns = [
     path("", include(thread_router.urls)),

@@ -48,10 +48,10 @@ class UserGenericContentModel(GenericContentModel):
 
 
 class DipStatus(models.TextChoices):
-    DRAFT = "draft", "Draft"
-    ACTIVE = "active", "Active"
-    EXECUTED = "executed", "Executed"
-    FAILED = "failed" "Failed"
+    DRAFT = "draft"
+    ACTIVE = "active"
+    EXECUTED = "executed"
+    FAILED = "failed"
 
 
 class ProposalType(models.TextChoices):

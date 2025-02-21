@@ -81,23 +81,37 @@ def sync_proposals_task(self, dao_id: int):
     autoretry_for=(Exception,),
     name="blockchain.sync_votes",
 )
-def sync_votes_task(self, proposal_id):
-    help = "handles votes syncronization process"
+def sync_votes_task(self, dip_id):
+    """
+    handles votes syncronization process
+
+    Args:
+        proposal_id (int): _description_
+
+    Raises:
+        self.retry: _description_
+
+    Returns:
+        dict:
+    """
+    from forum.models import Dip
     from .services.vote_service import VoteService
 
     try:
-        vote_service = VoteService()
+        dip = Dip.objects.get(id=dip_id)
 
-        result = vote_service.create_vote_instance(proposal_id)
+        vote_service = VoteService()
+        result = vote_service.create_vote_instance(dip)
 
         return {
             "status": "completed",
+            "dip_id": dip_id,
             "message": f"syncronized {len(result)} votes",
-            "data": [vote for vote in result],
+            "data": [{"id": vote.id, "support": vote.support} for vote in result],
         }
 
     except Exception as ex:
-        logger.error(f"async task failed: {str(ex)}")
+        logger.error(f"async task failed in votes_task: {str(ex)}")
         raise self.retry(exc=ex)
 
 
@@ -108,4 +122,26 @@ def sync_votes_task(self, proposal_id):
     autoretry_for=(Exception,),
     name="blockchain.sync_dip_status",
 )
-def sync_dip_status(self, proposal_id): ...
+def sync_dip_status(self, proposal_id):
+    """_summary_ update status for a single dip if the end_time is over
+
+    Args:
+        proposal_id (): _description_
+
+    Returns:
+
+    dict: updated proposal data
+    """
+    from .services.status_service import UpdateStatus
+
+    try:
+        update_service = UpdateStatus()
+        updated_dip = update_service.update_dip_status(proposal_id)
+        return {
+            "proposal_id": proposal_id,
+            "success": True,
+            "status": updated_dip.status,
+        }
+    except Exception as ex:
+        logger.error(f"async task failed in dip_status: {str(ex)}")
+        self.retry(exc=ex)
