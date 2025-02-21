@@ -38,7 +38,7 @@ class CustomPermissionHandler(BasePermission):
         jwt_auth = JWTAuthentication()
         try:
             result = jwt_auth.authenticate(request)
-            return result if result else ...
+            return result
         except Exception:
             raise AuthenticationFailed(
                 {
