@@ -12,7 +12,11 @@ from django.test import SimpleTestCase
 
 @patch("core.management.commands.wait_for_db.Command.check")
 class CommandTests(SimpleTestCase):
-    """Test commands"""
+    """test django commands such as waiting for db and celery scheduler
+
+    Args:
+        SimpleTestCase (Class): django built in class
+    """
 
     def test_wait_for_db_ready(self, patched_check):
         """test waiting for database"""
@@ -34,7 +38,6 @@ class CommandTests(SimpleTestCase):
         self.assertEqual(patched_check.call_count, 6)
         patched_check.assert_called_with(databases=["default"])
 
-    @patch("django_redis.")
     @patch("django_celery_beat.models.PeriodicTask.objects.get_or_create")
     @patch("django_celery_beat.models.IntervalSchedule.objects.get_or_create")
     def test_create_periodic_task(

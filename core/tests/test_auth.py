@@ -9,6 +9,13 @@ User = get_user_model()
 
 
 class AuthenticationTests(APITestCase):
+    """
+    test Suite for user authentication, checks jwt token
+
+    Args:
+        APITestCase (Class): django build in class
+    """
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -42,8 +49,7 @@ class AuthenticationTests(APITestCase):
 
     def test_login_with_no_jwt(self):
         response = self.client.post("/api/v1/user/profile/", user=self.user)
-        logger.debug(f"response: {response}\data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("Authentication credentials were not provided", response.data)
 
-    def
+    # TODO: TEST OWNERSHIP REQUIRING ENDPOINTS

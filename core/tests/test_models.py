@@ -1,14 +1,15 @@
+from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.test import TestCase
 from datetime import datetime
 from time import sleep
+from unittest.mock import patch
 
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-
-from django.core.exceptions import ValidationError
-
-from core.validators.ethereum_validation import eth_regex
 from core.helpers.eth_address_generator import generate_test_eth_address
+from core.validators.ethereum_validation import eth_regex
 from core.models import User
+from logging_config import logger
 
 
 def create_user(
@@ -21,6 +22,46 @@ def create_user(
     return get_user_model().objects.create_user(
         eth_address, password=password, email=email, **kwargs
     )
+
+
+#####################  DATABASE AND CACHE LEVEL TESTS  ######################
+
+
+class RedisCacheTests(TestCase):
+
+    def test_cache_set_get(self):
+        cache.set("test_key", "test_value", 30)
+        self.assertEqual(cache.get("test_key"), "test_value")
+
+    def test_cache_delete(self):
+        cache.set("test_key_to_delete", "test_value")
+        cache.delete("test_key_to_delete")
+        self.assertIsNone(cache.get("test_key_to_delete"))
+
+    def test_cache_with_wrong_value(self):
+        cache.set(
+            "test_key",
+            "test_value",
+        )
+        stored_value = cache.get("test_key")
+        wrong_value = "wrong_value"
+        self.assertNotEqual(stored_value, wrong_value)
+
+    def test_cache_expiration(
+        self,
+    ):
+        cache.set("test_value", "test_key", timeout=1)
+        sleep(1.1)
+        result = cache.get("test_value", "no value found")
+
+        self.assertEqual(result, "no value found")
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        logger.debug("tearing down cache")
+        cache.clear()
 
 
 class ModelTests(
@@ -155,4 +196,4 @@ class ModelTests(
         user.save()
         self.assertGreater(user.last_seen, old_last_seen)
 
-    #################   test dao model   #################
+    #################   TODO: TEST ALL MODELS   #################
