@@ -1,5 +1,6 @@
 import random
 import uuid
+from eth_utils import to_checksum_address
 
 
 def generate_test_eth_address():
@@ -8,4 +9,4 @@ def generate_test_eth_address():
     mixed_eth_address = "".join(
         random.choice([char.lower(), char.upper()]) for char in hex_address
     )
-    return f"0x{mixed_eth_address}"
+    return to_checksum_address(f"0x{mixed_eth_address}")

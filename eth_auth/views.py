@@ -1,14 +1,21 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import get_user_model
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import status
+
+from drf_spectacular.utils import extend_schema
+from django.contrib.auth import get_user_model
+
 from .serializers import NonceSerializer, SignatureSerializer
 
+from services.utils.exception_handler import ErrorHandlingMixin
 
-class NonceManagerView(APIView):
+
+class NonceManagerView(ErrorHandlingMixin, APIView):
+    def handle_exception(self, ex):
+        return super().handle_exception(ex)
+
     permission_classes = [AllowAny]
     serializer_class = NonceSerializer
 
@@ -31,7 +38,10 @@ class NonceManagerView(APIView):
         return Response(response)
 
 
-class SignatureVerifierView(APIView):
+class SignatureVerifierView(ErrorHandlingMixin, APIView):
+    def handle_exception(self, ex):
+        return super().handle_exception(ex)
+
     serializer_class = SignatureSerializer
     permission_classes = [AllowAny]
 
@@ -58,21 +68,21 @@ class SignatureVerifierView(APIView):
         serializer.is_valid(raise_exception=True)
         eth_address = serializer.validated_data["eth_address"]
 
-        try:
-            User = get_user_model()
-            user, _ = User.objects.get_or_create(eth_address=eth_address.lower())
-            refresh = RefreshToken.for_user(user)
+        # try:
+        User = get_user_model()
+        user, _ = User.objects.get_or_create(eth_address=eth_address.lower())
+        refresh = RefreshToken.for_user(user)
 
-            return Response(
-                {
-                    "is_success": True,
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
-                },
-                status=200,
-            )
-        except Exception as ex:
-            return Response(
-                {"error": str(ex)},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        return Response(
+            {
+                "is_success": True,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            },
+            status=200,
+        )
+        # except Exception as ex:
+        #     return Response(
+        #         {"error": str(ex)},
+        #         status=status.HTTP_401_UNAUTHORIZED,
+        #     )

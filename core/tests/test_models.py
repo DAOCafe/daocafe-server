@@ -50,9 +50,9 @@ class RedisCacheTests(TestCase):
     def test_cache_expiration(
         self,
     ):
-        cache.set("test_value", "test_key", timeout=1)
+        cache.set("test_key", "test_key", timeout=1)
         sleep(1.1)
-        result = cache.get("test_value", "no value found")
+        result = cache.get("test_key", "no value found")
 
         self.assertEqual(result, "no value found")
 
