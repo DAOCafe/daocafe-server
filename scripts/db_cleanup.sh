@@ -15,6 +15,7 @@ fi
 
 SQL_COMMANDS=$(cat <<EOF
 DELETE FROM dao_dao;
+DELETE FROM forum_thread;
 DELETE FROM dao_contract;
 DELETE FROM dao_stake;
 DELETE FROM forum_dip;

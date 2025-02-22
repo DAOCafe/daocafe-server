@@ -11,11 +11,8 @@ from .abstract.abstract_models import DipStatus
 from user.serializers import UserSerializer
 from django.shortcuts import get_object_or_404
 from logging_config import logger
-from .services.vote_service import VoteService
 from .abstract.abstract_models import ProposalType
 from django.contrib.auth import get_user_model
-from .services.status_service import UpdateStatus
-from .tasks import sync_votes_task
 
 
 class LexicalContentValidator:
@@ -201,28 +198,28 @@ class DipSerializer(BaseForumSerializer):
         ]
 
     def validate_proposal_type(self, value):
-        if value == "Transfer":
-            value = "0"
-        return value
+        logger.info(f"type is: {value}")
+        type_map = {
+            "Transfer": "0",
+            "Upgrade": "1",
+        }
+        logger.info(f"type is: {type_map.get(value)}")
+        return type_map.get(value)
 
     def validate(self, data):
-
         amount = data.get("proposal_data", {}).get("amount")
-        amount = int(amount) * 10**18
 
         if amount is not None:
+            amount = int(amount) * 10**18
+
             data["proposal_data"]["amount"] = amount
-        if "proposal_type" in data and data["proposal_type"] == "Transfer":
-            data["proposal_type"] = "0"
 
         return data
 
     def to_representation(self, instance):
-
+        logger.info("reached serializer")
         representation = super().to_representation(instance)
         representation["proposal_type"] = ProposalType(instance.proposal_type).label
-        if representation.get("status") == DipStatus.DRAFT:
-            representation.pop("status", None)
         if not isinstance(representation.get("proposal_id"), int):
             representation.pop("proposal_id", None)
         representation.pop("dao")
@@ -309,10 +306,10 @@ class DipDetailSerializer(DipSerializer):
                     "support": user_vote.support,
                     "voting_power": user_vote.voting_power,
                 }
-            else:
-                representation["user_vote"] = {"has_voted": False}
+        else:
+            representation["user_vote"] = {"has_voted": False}
 
-            return representation
+        return representation
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -343,6 +340,9 @@ class VotingHistorySerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        string1 = "faaf"
+        string2 = "faaf"
+        string3 = string1.join(string2)
         user = get_object_or_404(get_user_model(), id=representation["user"])
         representation["user"] = user.nickname
         representation.pop("dip", None)

@@ -34,6 +34,7 @@ class CommandTests(SimpleTestCase):
         self.assertEqual(patched_check.call_count, 6)
         patched_check.assert_called_with(databases=["default"])
 
+    @patch("django_redis.")
     @patch("django_celery_beat.models.PeriodicTask.objects.get_or_create")
     @patch("django_celery_beat.models.IntervalSchedule.objects.get_or_create")
     def test_create_periodic_task(

@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from eth_utils import is_checksum_address
 
 # CUSTOM MODULES
 from core.validators.eth_network_validator import validate_network
@@ -7,8 +6,6 @@ from .models import Dao, Contract, Stake
 from .packages.services.dao_service import DaoService
 from .packages.services.stake_service import StakeService
 from services.blockchain.dao_service import DaoConfirmationService
-from django.forms.models import model_to_dict
-from django.db.models import Sum
 from logging_config import logger
 
 # DAO/DAO DEPLOYMENT SERIALIZERS
@@ -59,7 +56,7 @@ class DaoInitialSerializer(serializers.ModelSerializer):
         data_from_chain["network"] = validated_data["network"]
         logger.info(f"user {self.context['request'].user.eth_address}")
         logger.info(f"data from chain: {data_from_chain['sender']}")
-        contracts = self.dao_service.instanciate_dao_and_contracts(
+        contracts = self.dao_service.instantiate_dao_and_contracts(
             user=self.context["request"].user,
             chain_data=data_from_chain,
         )
@@ -231,7 +228,7 @@ class DaoActiveSerializer(serializers.ModelSerializer):
     def get_stake(self, obj):
         return {
             "staker_count": str(obj.staker_count),
-            "total_staked": str(obj.total_staked)
+            "total_staked": str(obj.total_staked),
         }
 
     def get_user_stake(self, obj):
@@ -241,12 +238,9 @@ class DaoActiveSerializer(serializers.ModelSerializer):
             if stake:
                 return {
                     "has_staked": str(stake.amount),
-                    "voting_power": str(stake.voting_power)
+                    "voting_power": str(stake.voting_power),
                 }
-        return {
-            "has_staked": "0",
-            "voting_power": "0"
-        }
+        return {"has_staked": "0", "voting_power": "0"}
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

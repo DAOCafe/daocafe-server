@@ -18,10 +18,7 @@ class CustomPermissionHandler(BasePermission):
     # - JWT + ownership required for DAO manipulations
     # """
 
-    OWNER_REQUIRED_ENDPOINTS = [
-        "dao-fetch",
-        "dao-save",
-    ]
+    OWNER_REQUIRED_ENDPOINTS = ["dao-fetch", "dao-save", "refresh-status"]
     AUTH_REQUIRED_ENDPOINTS = [
         "thread-create",
         "dip-create",
@@ -40,11 +37,7 @@ class CustomPermissionHandler(BasePermission):
             result = jwt_auth.authenticate(request)
             return result
         except Exception:
-            raise AuthenticationFailed(
-                {
-                    "error": "authentication credentials were not provided",
-                }
-            )
+            raise
 
     def resolve_url(self, request):
         resolved = resolve(request.path_info)
@@ -57,6 +50,7 @@ class CustomPermissionHandler(BasePermission):
         url_path = self.resolve_url(request)
         if url_path == "refresh-stake":
             return True
+
         # If endpoint requires authentication
         if url_path in self.AUTH_REQUIRED_ENDPOINTS + self.OWNER_REQUIRED_ENDPOINTS:
             auth_result = self.authenticate(request)

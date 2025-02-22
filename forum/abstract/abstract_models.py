@@ -56,3 +56,4 @@ class DipStatus(models.TextChoices):
 
 class ProposalType(models.TextChoices):
     TRANSFER = "0", "Transfer"
+    UPGRADE = "1", "Upgrade"

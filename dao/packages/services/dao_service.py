@@ -1,22 +1,33 @@
 from .__init__ import transaction, Dao, Contract, logger, model_to_dict
+from typing import Optional
 
 
 class DaoService:
-    """Handles DAO and contract creation"""
+    """Handles dao and contract creation"""
 
     @staticmethod
-    def instanciate_dao_and_contracts(user, chain_data):
-        """instanciates DAO and contract instances from chain data"""
+    def instantiate_dao_and_contracts(user, chain_data) -> Contract:
+        """
+        instantiates two objects (Dao, Contract) with initial data available at the moment of dao creation
 
+        Args:
+            user (int): user extracted from request
+            chain_data (dict): contract addresses assigned at the moment of dao creation
+
+        Returns:
+            Contract: the created contract object
+        """
         is_exist = Contract.objects.filter(
             dao_address=chain_data["dao_address"]
         ).first()
 
         is_exist_dao = Dao.objects.filter().first()
 
-        if is_exist:
-            logger.debug(f"is exist: {is_exist.__dict__}")
-            return is_exist
+        if is_exist or is_exist_dao:
+            logger.debug(
+                f"is exist: {is_exist.__dict__ if is_exist else is_exist_dao.__dict__}"
+            )
+            return is_exist if is_exist else is_exist_dao
 
         else:
             with transaction.atomic():
@@ -38,7 +49,7 @@ class DaoService:
                 )
                 if dao and contracts:
                     logger.info(
-                        f"dao and contracts have been successfully instanciated"
+                        f"dao and contracts have been successfully instantiated"
                     )
 
             return contracts

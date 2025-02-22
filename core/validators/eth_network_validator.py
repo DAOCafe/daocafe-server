@@ -15,6 +15,7 @@ def validate_network(chain_id):
         5: "Goerli",
         11155111: "Sepolia",
         1337: "Hardhat",
+        10: "Optimism",
     }
     if chain_id not in VALID_NETWORKS:
         raise ValidationError(

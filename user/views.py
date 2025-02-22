@@ -14,10 +14,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from drf_spectacular.utils import extend_schema
+from services.utils.exception_handler import ErrorHandlingMixin
 
 
 class BaseUserView(
-    mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+    ErrorHandlingMixin,
+    mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
 ):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -55,5 +59,3 @@ class UserApiView(BaseUserView):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-

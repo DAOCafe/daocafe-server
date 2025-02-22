@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from core.validators.ethereum_validation import eth_regex
-from helpers.eth_address_generator import generate_test_eth_address
+from core.helpers.eth_address_generator import generate_test_eth_address
 from core.models import User
 
 
@@ -74,7 +74,7 @@ class ModelTests(
         for email, expected in sample_emails:
 
             user = create_user(
-                eth_address=self.generate_test_eth_address(),
+                eth_address=generate_test_eth_address(),
                 email=email,
                 password="sample123",
             )  # Pass eth_address implicitly

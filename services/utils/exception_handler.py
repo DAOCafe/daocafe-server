@@ -7,6 +7,7 @@ from rest_framework.exceptions import (
     AuthenticationFailed,
     NotAcceptable,
     UnsupportedMediaType,
+    NotAuthenticated,
 )
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
@@ -53,7 +54,7 @@ class ErrorHandlingMixin:
                 {"error": f"malformed request: {str(ex)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if isinstance(ex, AuthenticationFailed):
+        if isinstance(ex, (AuthenticationFailed, NotAuthenticated)):
             return Response(
                 ex.detail,
                 status=status.HTTP_401_UNAUTHORIZED,

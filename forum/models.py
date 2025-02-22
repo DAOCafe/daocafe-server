@@ -18,7 +18,6 @@ class Dip(BaseForumModel):
     status = models.CharField(
         max_length=20, choices=DipStatus.choices, default=DipStatus.DRAFT
     )
-    # CHANGE
     end_time = models.BigIntegerField(null=True)
     proposal_id = models.IntegerField(null=True, blank=True)
     proposal_type = models.CharField(
