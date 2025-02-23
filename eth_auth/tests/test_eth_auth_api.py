@@ -2,12 +2,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.test import APITestCase
 from rest_framework import status
 from unittest.mock import patch
-from eth_utils import to_hex, keccak
 import time
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 
 from core.helpers.eth_address_generator import generate_test_eth_address
+from eth_auth.eth_authentication import NonceManager
 from logging_config import logger
 
 User = get_user_model()
@@ -93,10 +94,20 @@ class AuthenticationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_malformed_signature(self):
+        nonce = "0995eec0693888d038356a45996cc7d1"
+        timestamp = 1740303534
+        cache_key = (
+            f"{NonceManager.NONCE_PREFIX}{self.bad_payload['eth_address'].lower()}"
+        )
+        cache.set(cache_key, (nonce, timestamp))
+        self.bad_payload["message"] = f"nonce: {nonce} timestamp: {timestamp}"
+
         with patch(
             "eth_auth.eth_authentication.SignatureVerifier.verify_ethereum_signature",
             return_value=False,
         ):
             response = self.client.post(self.verify_url, self.bad_payload)
-            logger.debug(f"response: {response.data}")
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertIn(
+                "invalid signature", str(response.data["error"]["non_field_errors"])
+            )

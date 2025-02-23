@@ -72,7 +72,6 @@ class SignatureVerifierView(ErrorHandlingMixin, APIView):
         User = get_user_model()
         user, _ = User.objects.get_or_create(eth_address=eth_address.lower())
         refresh = RefreshToken.for_user(user)
-
         return Response(
             {
                 "is_success": True,
@@ -81,8 +80,3 @@ class SignatureVerifierView(ErrorHandlingMixin, APIView):
             },
             status=200,
         )
-        # except Exception as ex:
-        #     return Response(
-        #         {"error": str(ex)},
-        #         status=status.HTTP_401_UNAUTHORIZED,
-        #     )
