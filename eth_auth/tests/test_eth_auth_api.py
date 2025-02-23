@@ -111,7 +111,6 @@ class AuthenticationTests(APITestCase):
             ):
                 response = self.client.post(self.verify_url, self.bad_payload)
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-                logger.critical(f"response: {response.data}")
                 self.assertIn(
                     "invalid signature", str(response.data["error"]["non_field_errors"])
                 )

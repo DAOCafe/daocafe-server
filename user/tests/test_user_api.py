@@ -35,8 +35,6 @@ class UserAPITests(APITestCase):
         cls.user_token = str(RefreshToken.for_user(cls.user).access_token)
         cls.owner_token = str(RefreshToken.for_user(cls.owner).access_token)
 
-        # cls.auth_headers = {"HTTP_AUTHORIZATION": f"Bearer {cls.user}"}
-        # cls.owner_headers = {"HTTP_AUTHORIZATION": f"Bearer {cls.owner}"}
         cls.HTTP_AUTHORIZATION = {"HTTP_AUTHORIZATION": f"Bearer {cls.user_token}"}
         cls.profile_url = "/api/v1/user/profile/"
 
