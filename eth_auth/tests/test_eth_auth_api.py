@@ -103,11 +103,15 @@ class AuthenticationTests(APITestCase):
         self.bad_payload["message"] = f"nonce: {nonce} timestamp: {timestamp}"
 
         with patch(
-            "eth_auth.eth_authentication.SignatureVerifier.verify_ethereum_signature",
-            return_value=False,
+            "eth_auth.eth_authentication.NonceManager.verify_nonce", return_value=True
         ):
-            response = self.client.post(self.verify_url, self.bad_payload)
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertIn(
-                "invalid signature", str(response.data["error"]["non_field_errors"])
-            )
+            with patch(
+                "eth_auth.eth_authentication.SignatureVerifier.verify_ethereum_signature",
+                return_value=False,
+            ):
+                response = self.client.post(self.verify_url, self.bad_payload)
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                logger.critical(f"response: {response.data}")
+                self.assertIn(
+                    "invalid signature", str(response.data["error"]["non_field_errors"])
+                )

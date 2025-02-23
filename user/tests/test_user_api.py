@@ -35,10 +35,14 @@ class UserAPITests(APITestCase):
         cls.user_token = str(RefreshToken.for_user(cls.user).access_token)
         cls.owner_token = str(RefreshToken.for_user(cls.owner).access_token)
 
-        cls.auth_headers = {"HTTP_AUTHORIZATION": f"Bearer {cls.user}"}
-        cls.owner_headers = {"HTTP_AUTHORIZATION": f"Bearer {cls.owner}"}
+        # cls.auth_headers = {"HTTP_AUTHORIZATION": f"Bearer {cls.user}"}
+        # cls.owner_headers = {"HTTP_AUTHORIZATION": f"Bearer {cls.owner}"}
         cls.HTTP_AUTHORIZATION = {"HTTP_AUTHORIZATION": f"Bearer {cls.user_token}"}
         cls.profile_url = "/api/v1/user/profile/"
+
+    def test_user_retrieval_unautorized(self):
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_retrieval_successful(self):
         response = self.client.get(self.profile_url, **self.HTTP_AUTHORIZATION)
@@ -61,3 +65,40 @@ class UserAPITests(APITestCase):
             **self.HTTP_AUTHORIZATION,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_patch_validation(self):
+        response = self.client.patch(
+            self.profile_url, {"email": "invalid @email"}, **self.HTTP_AUTHORIZATION
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        mock_invalid_image = SimpleUploadedFile(
+            "test.txt", b"not_an_image", content_type="text/plain"
+        )
+
+        response = self.client.patch(
+            self.profile_url, {"image": mock_invalid_image}, **self.HTTP_AUTHORIZATION
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_user_patch_unauthorized(self):
+        response = self.client.patch(self.profile_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_partial_update(self):
+        response = self.client.patch(
+            self.profile_url, {"nickname": "test_nickname"}, **self.HTTP_AUTHORIZATION
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["nickname"], "test_nickname")
+
+    def test_unsipported_methods(self):
+
+        response = self.client.post(self.profile_url, **self.HTTP_AUTHORIZATION)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        response = self.client.put(self.profile_url, **self.HTTP_AUTHORIZATION)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        response = self.client.delete(self.profile_url, **self.HTTP_AUTHORIZATION)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
