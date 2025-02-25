@@ -11,8 +11,9 @@ class DipSyncronizationService:
 
     def __init__(self, dao_contract):
         self.dao_address = dao_contract.dao_address
-        logger.info(f"dao contract: {dao_contract}\ndao_address: {self.dao_address}")
-        self.dip_service = DipConfirmationService(dao_address=self.dao_address)
+        self.network = dao_contract.network
+        logger.info(f"dao contract: {dao_contract}\ndao_address: {self.dao_address}\nnetwork: {self.network}")
+        self.dip_service = DipConfirmationService(dao_address=self.dao_address, network=self.network)
 
     def start_blockchain_sync(self, dao):
         try:

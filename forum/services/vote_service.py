@@ -29,7 +29,7 @@ class VoteService:
         contracts = VoteService._fetch_contracts(dip)
         logger.info(f"contracts: {contracts}")
 
-        blockchain_service = DaoConfirmationService(dao_address=contracts.dao_address)
+        blockchain_service = DaoConfirmationService(dao_address=contracts.dao_address, network=contracts.network)
 
         votes_from_chain = blockchain_service.start_vote_sync_process(dip.proposal_id)
 

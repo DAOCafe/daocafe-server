@@ -5,8 +5,10 @@ from logging_config import logger
 
 class BlockchainClient:
     def __init__(
-        self, dao_address: str = None, network: int = 11155111, retries: int = 3
+        self, dao_address: str = None, network: int = None, retries: int = 3
     ):
+        # If network is not provided, default to 11155111 (Sepolia)
+        network = network if network is not None else 11155111
         self.network = network
         self.retries = retries
         self.delay = 2

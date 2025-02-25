@@ -21,7 +21,7 @@ class UpdateStatus:
     def update_dip_status(self, proposal_id):
         contract = self.fetch_contract(proposal_id)
 
-        dip_service = DipConfirmationService(contract.dao_address)
+        dip_service = DipConfirmationService(dao_address=contract.dao_address, network=contract.network)
         dip = get_object_or_404(Dip, proposal_id=proposal_id)
 
         proposal = dip_service.get_proposals(proposal_id=proposal_id)

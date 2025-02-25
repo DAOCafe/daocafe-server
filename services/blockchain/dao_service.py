@@ -30,8 +30,10 @@ class DaoConfirmationService(BlockchainClient):
     reads on-chain staking amount """
 
     def __init__(
-        self, dao_address: str = None, network: int = 11155111, retries: int = 3
+        self, dao_address: str = None, network: int = None, retries: int = 3
     ):
+        # If network is not provided, default to 11155111 (Sepolia)
+        network = network if network is not None else 11155111
         super().__init__(dao_address=dao_address, network=network, retries=retries)
 
     def _get_initial_data(self) -> dict:
