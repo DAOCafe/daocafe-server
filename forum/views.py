@@ -318,12 +318,14 @@ class VotingHistoryView(BaseVoters):
     def get_queryset(self):
         context = self.get_serializer_context()
         dip_id = context["id"]
-
-        return Vote.objects.filter(id=dip_id).all()
+        logger.critical("this is the one")
+        return Vote.objects.filter(dip_id=dip_id).all()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["id"] = self.kwargs.get("id")
+        logger.critical("this is the one")
+
         return context
 
 

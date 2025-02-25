@@ -15,7 +15,7 @@ from logging_config import logger
 
 
 class DaoAPITests(APITestCase):
-    # *: test Suite for dao api operations. involves testing dao api, appropriate status codes and object ownership
+    # *NOTE: test Suite for dao api operations. involves testing dao api, appropriate status codes
 
     @classmethod
     def setUpClass(cls):
@@ -219,7 +219,6 @@ class DaoAPITests(APITestCase):
         )
 
         response = self.client.get(f"{self.url_prefix}refresh/stake/", {"page": 1})
-        logger.critical(f"response: {response.data}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
