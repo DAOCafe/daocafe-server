@@ -56,7 +56,7 @@ class ErrorHandlingMixin:
             )
         if isinstance(ex, (AuthenticationFailed, NotAuthenticated)):
             return Response(
-                ex.detail,
+                {"error": ex.detail},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         if isinstance(ex, NotAcceptable):

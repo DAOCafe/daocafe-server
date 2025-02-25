@@ -198,12 +198,10 @@ class DipSerializer(BaseForumSerializer):
         ]
 
     def validate_proposal_type(self, value):
-        logger.info(f"type is: {value}")
         type_map = {
             "Transfer": "0",
             "Upgrade": "1",
         }
-        logger.info(f"type is: {type_map.get(value)}")
         return type_map.get(value)
 
     def validate(self, data):
@@ -338,11 +336,13 @@ class VotingHistorySerializer(serializers.ModelSerializer):
             "voting_power",
         ]
 
+    def validate(self, data):
+        logger.critical("entered to representation")
+
+        return data
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        string1 = "faaf"
-        string2 = "faaf"
-        string3 = string1.join(string2)
         user = get_object_or_404(get_user_model(), id=representation["user"])
         representation["user"] = user.nickname
         representation.pop("dip", None)

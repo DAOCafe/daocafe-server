@@ -1,5 +1,4 @@
 from .__init__ import transaction, Dao, Contract, logger, model_to_dict
-from typing import Optional
 
 
 class DaoService:

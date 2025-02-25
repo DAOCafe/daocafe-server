@@ -46,6 +46,14 @@ class DaoInitialView(BaseDaoView):
 class StakeView(BaseDaoView):
     serializer_class = StakeSerializer
 
+    def paginate_queryset(self, queryset):
+        dao_id = self.request.GET.get("id")
+        slug = self.request.GET.get("slug")
+
+        if dao_id or slug:
+            return None
+        return super().paginate_queryset(queryset)
+
     def get_queryset(self):
         dao_id = self.request.GET.get("id")
         slug = self.request.GET.get("slug")
@@ -61,7 +69,7 @@ class StakeView(BaseDaoView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if self.request.method == 'POST':
+        if self.request.method == "POST":
             # For POST: Get params from request body
             context["dao_id"] = self.request.data.get("id")
             context["slug"] = self.request.data.get("dao_slug")

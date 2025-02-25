@@ -18,7 +18,10 @@ class CustomPermissionHandler(BasePermission):
     # - JWT + ownership required for DAO manipulations
     # """
 
-    OWNER_REQUIRED_ENDPOINTS = ["dao-fetch", "dao-save", "refresh-status"]
+    OWNER_REQUIRED_ENDPOINTS = [
+        "dao-fetch",
+        "dao-save",
+    ]  # Removed refresh-status since it operates on Dip objects which use author instead of owner
     AUTH_REQUIRED_ENDPOINTS = [
         "thread-create",
         "dip-create",
@@ -27,6 +30,7 @@ class CustomPermissionHandler(BasePermission):
         "thread-reply",
         "dip-reply",
         "reply-like",
+        "refresh-status",  # Added here since it only needs authentication, not ownership check
     ]
 
     def authenticate(self, request):

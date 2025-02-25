@@ -78,10 +78,11 @@ class StakeSerializer(serializers.ModelSerializer):
             "id",
             "dao_slug",
             "amount",
+            "voting_power",
             "user",
             "dao",
         ]
-        read_only_fields = ["amount", "user", "dao"]
+        read_only_fields = ["amount", "voting_power", "user", "dao"]
 
     def validate_amount(self, value):
         if isinstance(value, int):
