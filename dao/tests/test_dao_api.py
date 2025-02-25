@@ -8,7 +8,9 @@ from unittest.mock import patch
 
 from core.helpers.create_user import create_user
 
-from .dao_utils import DaoBaseMixin, DaoFactoryMixin, Dao
+from .dao_utils import DaoBaseMixin, DaoFactoryMixin
+from dao.models import Dao, Stake
+
 from logging_config import logger
 
 
@@ -23,12 +25,17 @@ class DaoAPITests(APITestCase):
         cls.HTTP_AUTHORIZATION = {f"HTTP_AUTHORIZATION": f"Bearer {cls.token}"}
         cls.url_prefix = "/api/v1/"
 
-        dao_base = DaoBaseMixin()
-        dao_factory = DaoFactoryMixin()
+        cls.dao_base = DaoBaseMixin()
 
-        # *: TEST OBJECTS
+        dao_base = DaoBaseMixin()
+        cls.dao_factory = DaoFactoryMixin()
+
+        # *NOTE: TEST OBJECTS
         cls.dao = dao_base.create_dao(owner=cls.user)
         cls.dao1 = dao_base.create_dao(owner=cls.user, slug="newslugish")
+
+        # *NOTE: CONFS
+        cls.pagination_keys = ["count", "next", "previous", "results"]
 
     def test_dao_list_successfull(self):
         response = self.client.get(f"{self.url_prefix}dao/")
@@ -43,10 +50,9 @@ class DaoAPITests(APITestCase):
 
     def test_dao_list_pagination(self):
         response = self.client.get(f"{self.url_prefix}dao/")
-        pagination_keys = ["count", "next", "previous", "results"]
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        for key in pagination_keys:
+        for key in self.pagination_keys:
             self.assertIn(key, response.data["data"])
 
     def test_dao_list_retrieves_empty_list(self):
@@ -82,6 +88,7 @@ class DaoAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     # *NOTE: DAO ENDPOINTS INTERACTING WITH BLOCKCHAIN
+
     @patch("services.blockchain.dao_service.DaoConfirmationService._get_initial_data")
     def test_dao_base_initialization(self, mock_get_initial_data):
         Dao.objects.all().delete()
@@ -143,7 +150,6 @@ class DaoAPITests(APITestCase):
         fetch_response = self.client.post(
             f"{self.url_prefix}dao-fetch/", fetch_payload, **self.HTTP_AUTHORIZATION
         )
-        logger.critical(f"fetch response: {fetch_response.data}")
         self.assertEqual(fetch_response.status_code, status.HTTP_201_CREATED)
 
         # Get the created DAO
@@ -170,10 +176,52 @@ class DaoAPITests(APITestCase):
         response = self.client.patch(
             f"{self.url_prefix}dao-save/", payload, **self.HTTP_AUTHORIZATION
         )
-        logger.critical(f"response: {response}\n{response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["slug"], payload["slug"])
 
     # *NOTE: STAKE ENDPOINTS TIGHTLY ASSOCIATED WITH DAO. INTERACTION WITH BLOCKCHAIN TAKES PLACE
 
-    def test_refresh_stake_retrieval
+    def test_refresh_stake_retrieval_by_query_params(self):
+        new_dao = self.dao_base.create_dao(slug="huyag")
+
+        stake = Stake.objects.create(
+            amount=1000000000000000000,
+            voting_power=1000000000000000000,
+            user=self.user,
+            dao=new_dao,
+        )
+
+        self.assertIsNotNone(stake.id)
+
+        response = self.client.get(
+            f"{self.url_prefix}refresh/stake/", {"id": new_dao.id}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["amount"], str(stake.amount))
+
+        response = self.client.get(
+            f"{self.url_prefix}refresh/stake/", {"slug": new_dao.slug}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["amount"], str(stake.amount))
+
+    def test_refresh_stake_retrieval_stake_paginated(self):
+        new_dao = self.dao_base.create_dao(slug="slug123")
+
+        stake = Stake.objects.create(
+            amount=1000000000000000000,
+            voting_power=1000000000000000000,
+            user=self.user,
+            dao=new_dao,
+        )
+
+        response = self.client.get(f"{self.url_prefix}refresh/stake/", {"page": 1})
+        logger.critical(f"response: {response.data}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for key in self.pagination_keys:
+            self.assertIn(key, response.data["data"])

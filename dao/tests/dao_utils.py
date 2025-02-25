@@ -17,7 +17,7 @@ class DaoBaseMixin:
 
         # ? NEEDS CONTRACTS PROPERTY ?
 
-    def create_dao(self, **overrides):
+    def create_dao(self, **overrides) -> Dao:
         dao_data = {
             "owner": self.owner,
             "dao_name": self.dao_name,
@@ -44,7 +44,7 @@ class DaoBaseMixin:
 
 
 class DaoFactoryMixin(DaoBaseMixin):
-    def create_dao(self, **overrides):
+    def create_dao(self, **overrides) -> Dao | Contract:
         dao = super().create_dao(**overrides)
 
         Contract.objects.create(
