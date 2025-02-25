@@ -25,6 +25,8 @@ class UpdateStatus:
         dip = get_object_or_404(Dip, proposal_id=proposal_id)
 
         proposal = dip_service.get_proposals(proposal_id=proposal_id)
+        if not proposal:
+            raise ValueError("no proposal data found")
 
         proposal_end_time = datetime.fromtimestamp(proposal["end_time"])
         dip_end_time = datetime.fromtimestamp(dip.end_time)
