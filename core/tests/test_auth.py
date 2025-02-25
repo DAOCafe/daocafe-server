@@ -1,22 +1,18 @@
 from datetime import timedelta
 
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken, TokenError
-from rest_framework.test import APITestCase
 from rest_framework import status
-from unittest.mock import patch
 
-from django.contrib.auth import get_user_model
+from django.test import TestCase, Client
 from django.utils.timezone import now
 
-from core.helpers.eth_address_generator import generate_test_eth_address
+from core.helpers.create_user import create_user
 from logging_config import logger
 
-User = get_user_model()
 
-
-class AuthenticationTests(APITestCase):
+class AuthenticationTests(TestCase):
     """
-    test Suite for user API, checks jwt token
+    test Suite for jwt token logic (expiration, validation, etc.)
 
     Args:
         APITestCase (Class): django build in class
@@ -25,12 +21,8 @@ class AuthenticationTests(APITestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        cls.user = User.objects.create(
-            eth_address=generate_test_eth_address(),
-            nickname="user",
-            email="johndoe@example.com",
-        )
+        cls.client = Client()
+        cls.user = create_user()
         # cls.owner = User.objects.create(
         #     eth_address=generate_test_eth_address(), nickname="owner"
         # )
@@ -63,6 +55,13 @@ class AuthenticationTests(APITestCase):
 
         with self.assertRaises(TokenError):
             AccessToken(malformed_token_str).verify()
+
+    # TODO: EXPAND TOKENS AND AUTH TEST POOL FURTHER
+
+    """
+    * STARTING POINT FOR AUTHENTICATION TESTS
+    1 TEST PER API, EXTENSIVE TEST COVERAGE TAKES PLACE IN DEDICATED APP-TEST SUITES
+    """
 
     def test_login_with_no_jwt(self):
         response = self.client.post("/api/v1/user/profile/", user=self.user)

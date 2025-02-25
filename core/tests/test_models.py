@@ -60,7 +60,6 @@ class RedisCacheTests(TestCase):
         cache.clear()
 
     def tearDown(self):
-        logger.debug("tearing down cache")
         cache.clear()
 
 

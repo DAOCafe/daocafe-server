@@ -14,7 +14,7 @@ from logging_config import logger
 User = get_user_model()
 
 
-class AuthenticationTests(APITestCase):
+class EthAPITests(APITestCase):
     """
     test Suite for user API, checks jwt token
 

@@ -73,8 +73,6 @@ class SignatureVerifier:
     ) -> bool:
         """verify that the signature was signed by the address owner"""
         try:
-            print(f"Starting signature verification for address: {eth_address}")
-            print(f"Message to verify: {message}")
 
             cache_key = f"{NonceManager.NONCE_PREFIX}{eth_address.lower()}"
             stored_data = cache.get(cache_key)
