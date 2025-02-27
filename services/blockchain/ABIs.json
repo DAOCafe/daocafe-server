@@ -127,19 +127,99 @@
       "name": "getUpgradeData",
       "outputs": [
         {
-          "internalType": "enum IDAOBase.UpgradeableContract",
-          "name": "contractToUpgrade",
+          "internalType": "address[]",
+          "name": "newImplementations",
+          "type": "address[]"
+        },
+        {
+          "internalType": "string",
+          "name": "newVersion",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getModuleUpgradeData",
+      "outputs": [
+        {
+          "internalType": "enum IDAOModule.ModuleType",
+          "name": "moduleType",
           "type": "uint8"
         },
         {
           "internalType": "address",
-          "name": "newImplementation",
+          "name": "moduleAddress",
           "type": "address"
         },
         {
           "internalType": "string",
           "name": "newVersion",
           "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getPresaleData",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "initialPrice",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getPresalePauseData",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "presaleContract",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "pause",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getPresaleWithdrawData",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "presaleContract",
+          "type": "address"
         }
       ],
       "stateMutability": "view",

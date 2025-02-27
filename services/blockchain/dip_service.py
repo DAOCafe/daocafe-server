@@ -69,33 +69,84 @@ class DipConfirmationService(BlockchainClient):
             proposal_id = proposal["proposal_id"]
             proposal_type = proposal["proposal_type"]
 
-            additional_data = self.get_type(
-                proposal_id,
-                proposal_type,
-                contract,
-            )
+            try:
+                additional_data = self.get_type(
+                    proposal_id,
+                    proposal_type,
+                    contract,
+                )
 
-            complete_proposal = {
-                **proposal,
-                "token": additional_data[0],
-                "recipient": additional_data[1],
-                "amount": additional_data[2],
-            }
-            complete_proposals.append(complete_proposal)
+                # Create a base proposal with common fields
+                complete_proposal = {
+                    **proposal,
+                }
+
+                # Add type-specific data
+                if proposal_type == 0:  # Transfer
+                    complete_proposal.update({
+                        "token": additional_data[0],
+                        "recipient": additional_data[1],
+                        "amount": additional_data[2],
+                    })
+                elif proposal_type == 1:  # Upgrade
+                    implementations, version = additional_data
+                    complete_proposal.update({
+                        "implementations": implementations,
+                        "version": version,
+                    })
+                elif proposal_type == 2:  # Module Upgrade
+                    complete_proposal.update({
+                        "module_type": additional_data[0],
+                        "module_address": additional_data[1],
+                        "version": additional_data[2],
+                    })
+                elif proposal_type == 3:  # Presale
+                    complete_proposal.update({
+                        "token": additional_data[0],
+                        "amount": additional_data[1],
+                        "initial_price": additional_data[2],
+                    })
+                elif proposal_type == 4:  # Presale Pause
+                    complete_proposal.update({
+                        "presale_contract": additional_data[0],
+                        "pause": additional_data[1],
+                    })
+                elif proposal_type == 5:  # Presale Withdraw
+                    complete_proposal.update({
+                        "presale_contract": additional_data[0],
+                    })
+                # Types 6 and 7 (Pause/Unpause) don't have additional data
+
+                complete_proposals.append(complete_proposal)
+            except Exception as e:
+                logger.error(f"Error processing proposal {proposal_id}: {e}")
+                # Skip this proposal and continue with others
+                continue
+
         return complete_proposals
 
     def get_type(
         self, proposal_id: int, type_: int, contract
-    ) -> Union[list, None, Exception]:
-        if type_ not in range(0, 2):
+    ) -> Union[list, tuple, None, Exception]:
+        if type_ not in range(0, 8):
             logger.error(f"invalid proposal type: {type_}")
             return None
         try:
             match type_:
-                case 0:
+                case 0:  # Transfer
                     return contract.functions.getTransferData(proposal_id).call()
-                case 1:
+                case 1:  # Upgrade
                     return contract.functions.getUpgradeData(proposal_id).call()
+                case 2:  # Module Upgrade
+                    return contract.functions.getModuleUpgradeData(proposal_id).call()
+                case 3:  # Presale
+                    return contract.functions.getPresaleData(proposal_id).call()
+                case 4:  # Presale Pause
+                    return contract.functions.getPresalePauseData(proposal_id).call()
+                case 5:  # Presale Withdraw
+                    return contract.functions.getPresaleWithdrawData(proposal_id).call()
+                case 6 | 7:  # Pause/Unpause - no additional data
+                    return None
         except Exception as ex:
             logger.error(f"error getting data for proposal {proposal_id}: {ex}")
             raise ex

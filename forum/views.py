@@ -189,6 +189,13 @@ class ThreadLikeView(BaseLikeContentView):
 class ReplyLikeView(BaseLikeContentView):
     model = Reply
 
+    def get_object_id(self):
+        reply_id = self.kwargs.get("reply_id")  # Get the reply_id from the URL
+        obj = self.model.objects.filter(id=reply_id).first()
+        if not obj:
+            raise serializers.ValidationError(f"Reply with id {reply_id} not found")
+        return reply_id
+
 
 @extend_schema(tags=["dip"])
 class DipReplyView(BaseReplyContentView):
@@ -200,12 +207,11 @@ class DipLikeView(BaseLikeContentView):
     model = Dip
 
     def get_object_id(self):
-        reply_id = self.kwargs.get("reply_id")
-        parent_id = self.kwargs.get("id")
-        reply = Reply.objects.filter(id=reply_id).first()
-        if reply.object_id != int(parent_id):
-            raise serializers.ValidationError("ids do not match")
-        return reply_id
+        object_id = self.kwargs.get("id")
+        obj = self.model.objects.filter(id=object_id).first()
+        if hasattr(obj, "dao") and obj.dao.slug != self.kwargs.get("slug"):
+            raise serializers.ValidationError("slugs do not match")
+        return object_id
 
 
 @extend_schema(tags=["dip"])

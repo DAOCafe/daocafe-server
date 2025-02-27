@@ -31,28 +31,57 @@ class DipSyncronizationService:
             raise Exception("blockchain sync task")
 
     def compare_proposal_data(self, blockchain_data, db_data):
-        """facility method to for db chain data comparison"""
+        """Compare blockchain data with database data based on proposal type"""
         try:
             db_proposal_data = db_data.proposal_data
-
-            db_amount = int(db_proposal_data["amount"])
-            logger.debug(f"type from chain: {type(blockchain_data['amount'])}")
-            logger.error("entered compare func")
-            logger.debug(f"data from chain: {blockchain_data}")
-            logger.debug(f"data from draft: {db_proposal_data}")
-
-            result = (
-                blockchain_data["token"] == db_proposal_data["token"]
-                and blockchain_data["recipient"].lower()
-                == db_proposal_data["recipient"].lower()
-                and blockchain_data["amount"] == db_amount
-            )
+            proposal_type = int(db_data.proposal_type)
+            
+            logger.debug(f"Comparing proposal type: {proposal_type}")
+            logger.debug(f"Data from chain: {blockchain_data}")
+            logger.debug(f"Data from draft: {db_proposal_data}")
+            
+            if proposal_type == 0:  # Transfer
+                db_amount = int(db_proposal_data["amount"])
+                result = (
+                    blockchain_data["token"] == db_proposal_data["token"]
+                    and blockchain_data["recipient"].lower() == db_proposal_data["recipient"].lower()
+                    and blockchain_data["amount"] == db_amount
+                )
+            elif proposal_type == 1:  # Upgrade
+                result = blockchain_data["version"] == db_proposal_data["version"]
+            elif proposal_type == 2:  # Module Upgrade
+                result = (
+                    blockchain_data["module_address"].lower() == db_proposal_data["module_address"].lower()
+                    and blockchain_data["version"] == db_proposal_data["version"]
+                )
+            elif proposal_type == 3:  # Presale
+                db_amount = int(db_proposal_data["amount"])
+                db_price = int(db_proposal_data["initial_price"])
+                result = (
+                    blockchain_data["token"] == db_proposal_data["token"]
+                    and blockchain_data["amount"] == db_amount
+                    and blockchain_data["initial_price"] == db_price
+                )
+            elif proposal_type == 4:  # Presale Pause
+                result = (
+                    blockchain_data["presale_contract"].lower() == db_proposal_data["presale_contract"].lower()
+                    and blockchain_data["pause"] == db_proposal_data["pause"]
+                )
+            elif proposal_type == 5:  # Presale Withdraw
+                result = blockchain_data["presale_contract"].lower() == db_proposal_data["presale_contract"].lower()
+            elif proposal_type in [6, 7]:  # Pause/Unpause
+                # These don't have additional data to compare
+                result = True
+            else:
+                logger.error(f"Unknown proposal type for comparison: {proposal_type}")
+                result = False
+                
             if result:
-                logger.info(f"comparison true: {result}")
-            logger.info(f"result = {result}")
+                logger.info(f"Comparison true: {result}")
+            logger.info(f"Result = {result}")
             return result
         except Exception as ex:
-            logger.debug(f"error in compare_proposal_data: {str(ex)}")
+            logger.debug(f"Error in compare_proposal_data: {str(ex)}")
             return False
 
     def process_blockchain_data(self, dao):

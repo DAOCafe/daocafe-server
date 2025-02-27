@@ -57,3 +57,9 @@ class DipStatus(models.TextChoices):
 class ProposalType(models.TextChoices):
     TRANSFER = "0", "Transfer"
     UPGRADE = "1", "Upgrade"
+    MODULE_UPGRADE = "2", "Module Upgrade"
+    PRESALE = "3", "Presale"
+    PRESALE_PAUSE = "4", "Presale Pause"
+    PRESALE_WITHDRAW = "5", "Presale Withdraw"
+    PAUSE = "6", "Pause"
+    UNPAUSE = "7", "Unpause"
