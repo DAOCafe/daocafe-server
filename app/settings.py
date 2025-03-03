@@ -190,3 +190,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 CELERY_TIMEZONE = "UTC"
+
+# Blockchain settings
+BLOCKCHAIN_SCAN_BLOCK_RANGE = 10000  # Default number of blocks to scan for events

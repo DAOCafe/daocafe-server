@@ -1,36 +1,41 @@
 from django.urls import path
 
-from .views import DaoInitialView, DaoCompleteView, ActiveDaosView, PresaleView, StakeView, PresaleRefreshView
+from .views import DaoInitialView, DaoCompleteView, ActiveDaosView, PresaleView, StakeView, PresaleRefreshView, PresaleTransactionsView
 
 app_name = "dao"
 
 urlpatterns = [
-    path("/", ActiveDaosView.as_view({"get": "list"}), name="daos-list"),
+    path("", ActiveDaosView.as_view({"get": "list"}), name="daos-list"),
     path("-fetch/", DaoInitialView.as_view({"post": "create"}), name="dao-fetch"),
     path("-save/", DaoCompleteView.as_view({"patch": "update"}), name="dao-save"),
     path(
-        "/<slug:slug>/info/",
+        "<slug:slug>/info/",
         ActiveDaosView.as_view({"get": "retrieve"}),
         name="daos-retrieve",
     ),
     path(
-        "/stakes/",
+        "stakes/",
         StakeView.as_view({"get": "list", "post": "create"}),
         name="stakes-list-create",
     ),
     path(
-        "/presales/",
+        "presales/",
         PresaleView.as_view({"get": "list"}),
         name="presales-list",
     ),
     path(
-        "/<slug:slug>/presales/",
+        "<slug:slug>/presales/",
         PresaleView.as_view({"get": "list"}),
         name="dao-presales-list",
     ),
     path(
-        "/presales/<int:id>/refresh/",
+        "presales/<int:id>/refresh/",
         PresaleRefreshView.as_view({"patch": "update"}),
         name="presale-refresh",
+    ),
+    path(
+        "presales/<int:id>/transactions/",
+        PresaleTransactionsView.as_view({"get": "list"}),
+        name="presale-transactions",
     ),
 ]

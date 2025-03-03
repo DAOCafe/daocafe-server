@@ -4,13 +4,14 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.shortcuts import get_object_or_404
 
 # CUSTOM MODULES
-from .models import Dao, Stake, Presale, Contract
+from .models import Dao, Stake, Presale, Contract, PresaleTransaction
 from .serializers import (
     DaoInitialSerializer,
     StakeSerializer,
     DaoCompleteSerializer,
     DaoActiveSerializer,
     PresaleSerializer,
+    PresaleTransactionSerializer,
 )
 from .packages.abstract.abstract_views import (
     BaseDaoView,
@@ -19,6 +20,7 @@ from .packages.abstract.abstract_views import (
 from .packages.services.presale_service import PresaleService
 from django.db.models import When, Case, Sum, Count, F
 from logging_config import logger
+from services.utils.custom_pagination import CustomPagination
 
 ######################## VIEWS ########################
 
@@ -181,5 +183,31 @@ class PresaleRefreshView(BaseDaoView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+        # Fetch and process events
+        presale_service.fetch_presale_events(updated_presale)
+        
         serializer = self.get_serializer(updated_presale)
         return Response(serializer.data)
+
+
+@extend_schema(tags=["presale"])
+class PresaleTransactionsView(PublicBaseDaoView):
+    """
+    View for accessing presale transaction history
+    Supports: list for all users with pagination
+    """
+    serializer_class = PresaleTransactionSerializer
+    pagination_class = CustomPagination
+    
+    def get_queryset(self):
+        presale_id = self.kwargs.get("id")
+        return PresaleTransaction.objects.filter(presale_id=presale_id).order_by('-timestamp')
+    
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="page", type=int, description="Page number for pagination"),
+            OpenApiParameter(name="page_size", type=int, description="Number of items per page (max 10)"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)

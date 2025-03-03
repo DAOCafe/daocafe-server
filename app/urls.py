@@ -18,8 +18,8 @@ api_urlpatterns = [
     # user-related endpoints
     path("user/", include("user.urls")),
     # dao-related endpoints
-    path("dao", include("dao.urls")),
-    path("dao/", include("forum.urls")),
+    path("dao/", include("dao.urls")),
+    path("dao/", include("forum.urls")),  # Changed to avoid path conflict
     path(
         "refresh/stake/",
         StakeView.as_view({"post": "create", "get": "list"}),

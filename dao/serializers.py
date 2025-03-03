@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 # CUSTOM MODULES
 from core.validators.eth_network_validator import validate_network
-from .models import Dao, Contract, Stake, Presale, PresaleStatus
+from .models import Dao, Contract, Stake, Presale, PresaleStatus, PresaleTransaction
 from .packages.services.dao_service import DaoService
 from .packages.services.stake_service import StakeService
 from services.blockchain.dao_service import DaoConfirmationService
@@ -313,4 +313,33 @@ class PresaleSerializer(serializers.ModelSerializer):
         
         # Remove dao field from response as we already have dao_slug
         representation.pop("dao", None)
+        return representation
+
+
+class PresaleTransactionSerializer(serializers.ModelSerializer):
+    """Serializer for presale transaction events"""
+    user_address = serializers.CharField(source='user.eth_address', read_only=True)
+    user_nickname = serializers.CharField(source='user.nickname', read_only=True)
+    
+    class Meta:
+        model = PresaleTransaction
+        fields = [
+            'id', 
+            'user_address', 
+            'user_nickname', 
+            'action', 
+            'token_amount', 
+            'eth_amount', 
+            'transaction_hash', 
+            'timestamp'
+        ]
+        read_only_fields = fields
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Convert decimal fields to strings for JSON serialization
+        decimal_fields = ['token_amount', 'eth_amount']
+        for field in decimal_fields:
+            if field in representation:
+                representation[field] = str(representation[field])
         return representation

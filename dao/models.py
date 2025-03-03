@@ -108,6 +108,7 @@ class Presale(models.Model):
     remaining_in_tier = models.DecimalField(max_digits=32, default=0, decimal_places=0)
     total_remaining = models.DecimalField(max_digits=32, default=0, decimal_places=0)
     total_raised = models.DecimalField(max_digits=32, default=0, decimal_places=0)
+    deployment_block = models.PositiveIntegerField(default=0)  # Block number when the contract was deployed
     last_updated = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -116,3 +117,28 @@ class Presale(models.Model):
             models.Index(fields=["dao"]),
             models.Index(fields=["status"]),
         ]
+
+
+class PresaleTransaction(models.Model):
+    """Model to store presale transaction events (buys and sells)"""
+    
+    class ActionChoices(models.TextChoices):
+        BUY = "BUY", "Buy"
+        SELL = "SELL", "Sell"
+    
+    presale = models.ForeignKey(Presale, on_delete=models.CASCADE, related_name="transactions")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    action = models.CharField(max_length=10, choices=ActionChoices.choices)
+    token_amount = models.DecimalField(max_digits=20, decimal_places=4)
+    eth_amount = models.DecimalField(max_digits=20, decimal_places=4)
+    block_number = models.PositiveIntegerField()
+    transaction_hash = models.CharField(max_length=66, unique=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["presale"]),
+            models.Index(fields=["user"]),
+            models.Index(fields=["block_number"]),
+        ]
+        ordering = ['-timestamp']  # Default ordering from newest to oldest

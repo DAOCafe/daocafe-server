@@ -254,6 +254,26 @@
       ],
       "stateMutability": "view",
       "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": true, "name": "buyer", "type": "address"},
+        {"indexed": false, "name": "ethAmount", "type": "uint256"},
+        {"indexed": false, "name": "tokenAmount", "type": "uint256"}
+      ],
+      "name": "TokensPurchased",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": true, "name": "seller", "type": "address"},
+        {"indexed": false, "name": "tokenAmount", "type": "uint256"},
+        {"indexed": false, "name": "ethAmount", "type": "uint256"}
+      ],
+      "name": "TokensSold",
+      "type": "event"
     }
   ]
 }
