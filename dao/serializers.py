@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 # CUSTOM MODULES
 from core.validators.eth_network_validator import validate_network
-from .models import Dao, Contract, Stake
+from .models import Dao, Contract, Stake, Presale, PresaleStatus
 from .packages.services.dao_service import DaoService
 from .packages.services.stake_service import StakeService
 from services.blockchain.dao_service import DaoConfirmationService
@@ -267,4 +267,50 @@ class DaoActiveSerializer(serializers.ModelSerializer):
         if "total_supply" in representation:
             representation["total_supply"] = str(representation["total_supply"])
 
+        return representation
+
+
+class PresaleSerializer(serializers.ModelSerializer):
+    dao_slug = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Presale
+        fields = [
+            "id",
+            "dao",
+            "dao_slug",
+            "presale_contract",
+            "total_token_amount",
+            "initial_price",
+            "status",
+            "current_tier",
+            "current_price",
+            "remaining_in_tier",
+            "total_remaining",
+            "total_raised",
+            "last_updated",
+            "created_at",
+        ]
+        read_only_fields = fields
+    
+    def get_dao_slug(self, obj):
+        return obj.dao.slug if obj.dao else None
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Convert decimal fields to strings for JSON serialization
+        decimal_fields = [
+            "total_token_amount", 
+            "initial_price", 
+            "current_price", 
+            "remaining_in_tier", 
+            "total_remaining", 
+            "total_raised"
+        ]
+        for field in decimal_fields:
+            if field in representation:
+                representation[field] = str(representation[field])
+        
+        # Remove dao field from response as we already have dao_slug
+        representation.pop("dao", None)
         return representation

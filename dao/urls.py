@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import DaoInitialView, DaoCompleteView, ActiveDaosView
+from .views import DaoInitialView, DaoCompleteView, ActiveDaosView, PresaleView, StakeView, PresaleRefreshView
 
 app_name = "dao"
 
@@ -12,5 +12,25 @@ urlpatterns = [
         "/<slug:slug>/info/",
         ActiveDaosView.as_view({"get": "retrieve"}),
         name="daos-retrieve",
+    ),
+    path(
+        "/stakes/",
+        StakeView.as_view({"get": "list", "post": "create"}),
+        name="stakes-list-create",
+    ),
+    path(
+        "/presales/",
+        PresaleView.as_view({"get": "list"}),
+        name="presales-list",
+    ),
+    path(
+        "/<slug:slug>/presales/",
+        PresaleView.as_view({"get": "list"}),
+        name="dao-presales-list",
+    ),
+    path(
+        "/presales/<int:id>/refresh/",
+        PresaleRefreshView.as_view({"patch": "update"}),
+        name="presale-refresh",
     ),
 ]

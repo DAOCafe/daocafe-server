@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import F
 from logging_config import logger
 from .default_proposal_content import DEFAULT_BLOCKCHAIN_PROPOSAL_CONTENT
+import time
 
 
 class DipSyncronizationService:
@@ -55,11 +56,10 @@ class DipSyncronizationService:
                     and blockchain_data["version"] == db_proposal_data["version"]
                 )
             elif proposal_type == 3:  # Presale
-                db_amount = int(db_proposal_data["amount"])
-                db_price = int(db_proposal_data["initial_price"])
+                db_amount = int(db_proposal_data["tokenAmount"])
+                db_price = int(db_proposal_data["initialPrice"])
                 result = (
-                    blockchain_data["token"] == db_proposal_data["token"]
-                    and blockchain_data["amount"] == db_amount
+                    blockchain_data["amount"] == db_amount
                     and blockchain_data["initial_price"] == db_price
                 )
             elif proposal_type == 4:  # Presale Pause
@@ -92,6 +92,8 @@ class DipSyncronizationService:
                     "proposal_id", flat=True
                 )
             )
+            logger.debug("Waiting 5 seconds before fetching blockchain data...")
+            time.sleep(5)
             proposals = self.dip_service.get_proposal_data(
                 excluded_proposals=existing_proposal_ids
             )

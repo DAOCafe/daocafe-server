@@ -2,6 +2,8 @@ from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
 from logging_config import logger
+from dao.models import Presale, PresaleStatus
+from dao.packages.services.presale_service import PresaleService
 
 
 @shared_task(bind=True)
@@ -122,26 +124,95 @@ def sync_votes_task(self, dip_id):
     autoretry_for=(Exception,),
     name="blockchain.sync_dip_status",
 )
-def sync_dip_status(self, proposal_id):
+def sync_dip_status(self, dip_id):
     """_summary_ update status for a single dip if the end_time is over
 
     Args:
-        proposal_id (): _description_
+        dip_id (int): The ID of the DIP to update
 
     Returns:
-
-    dict: updated proposal data
+        dict: updated proposal data
     """
     from .services.status_service import UpdateStatus
+    from .models import Dip
 
     try:
+        dip = Dip.objects.get(id=dip_id)
         update_service = UpdateStatus()
-        updated_dip = update_service.update_dip_status(proposal_id)
+        updated_dip = update_service.update_dip_status(dip)
         return {
-            "proposal_id": proposal_id,
+            "dip_id": dip_id,
+            "proposal_id": dip.proposal_id,
             "success": True,
             "status": updated_dip.status,
         }
     except Exception as ex:
         logger.error(f"async task failed in dip_status: {str(ex)}")
         self.retry(exc=ex)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=5,
+    autoretry_for=(Exception,),
+    name="blockchain.update_presale_state",
+)
+def update_presale_state(self, presale_id=None):
+    """
+    Update the state of presale contracts by calling getPresaleState
+    
+    Args:
+        presale_id (int, optional): The ID of the specific presale to update.
+            If None, update all active presales.
+    
+    Returns:
+        dict: Information about the updated presales
+    """
+    try:
+        # Get presales to update
+        if presale_id:
+            presales = Presale.objects.filter(id=presale_id)
+        else:
+            # Only update active presales
+            presales = Presale.objects.filter(status=PresaleStatus.ACTIVE)
+        
+        if not presales:
+            logger.info(f"No presales to update")
+            return {
+                "status": "completed",
+                "message": "No presales to update",
+                "updated_count": 0,
+            }
+        
+        updated_presales = []
+        
+        # Update each presale
+        for presale in presales:
+            # Get the contract for the presale's DAO
+            from dao.models import Contract
+            contract = Contract.objects.filter(dao_id=presale.dao_id).first()
+            
+            if not contract:
+                logger.error(f"No contract found for presale {presale.id}")
+                continue
+            
+            # Update the presale state
+            presale_service = PresaleService(
+                presale_contract=presale.presale_contract,
+                network=contract.network
+            )
+            updated_presale = presale_service.update_presale_state(presale)
+            
+            if updated_presale:
+                updated_presales.append(updated_presale.id)
+        
+        return {
+            "status": "completed",
+            "message": f"Updated {len(updated_presales)} presales",
+            "updated_presales": updated_presales,
+        }
+    
+    except Exception as ex:
+        logger.error(f"Error updating presale state: {str(ex)}")
+        raise self.retry(exc=ex)

@@ -1,22 +1,24 @@
-# from rest_framework.response import Response
-# from rest_framework import status
-from drf_spectacular.utils import extend_schema
+from rest_framework.response import Response
+from rest_framework import status
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.shortcuts import get_object_or_404
 
 # CUSTOM MODULES
-from .models import Dao, Stake
+from .models import Dao, Stake, Presale, Contract
 from .serializers import (
     DaoInitialSerializer,
     StakeSerializer,
     DaoCompleteSerializer,
     DaoActiveSerializer,
+    PresaleSerializer,
 )
 from .packages.abstract.abstract_views import (
     BaseDaoView,
     PublicBaseDaoView,
 )
+from .packages.services.presale_service import PresaleService
 from django.db.models import When, Case, Sum, Count, F
 from logging_config import logger
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 ######################## VIEWS ########################
 
@@ -121,3 +123,63 @@ class ActiveDaosView(PublicBaseDaoView):
         context = super().get_serializer_context()
         context["request"] = self.request
         return context
+
+
+@extend_schema(tags=["presale"])
+class PresaleView(PublicBaseDaoView):
+    """
+    View for accessing presale information
+    Supports: list, retrieve for all users
+    """
+    
+    serializer_class = PresaleSerializer
+    
+    def get_queryset(self):
+        slug = self.kwargs.get("slug")
+        if slug:
+            return Presale.objects.filter(dao__slug=slug).order_by("-created_at")
+        return Presale.objects.all().order_by("-created_at")
+    
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="slug", type=str, description="Filter presales by DAO slug"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+
+@extend_schema(tags=["refresh"])
+class PresaleRefreshView(BaseDaoView):
+    """
+    View for refreshing presale state from the blockchain
+    """
+    
+    def get_serializer_class(self):
+        return PresaleSerializer
+    
+    def get_object(self):
+        presale_id = self.kwargs.get("id")
+        return get_object_or_404(Presale, id=presale_id)
+    
+    def update(self, request, *args, **kwargs):
+        presale = self.get_object()
+        
+        # Get the contract for the presale's DAO
+        contract = get_object_or_404(Contract, dao_id=presale.dao_id)
+        
+        # Update the presale state
+        presale_service = PresaleService(
+            presale_contract=presale.presale_contract,
+            network=contract.network
+        )
+        updated_presale = presale_service.update_presale_state(presale)
+        
+        if not updated_presale:
+            return Response(
+                {"error": "Failed to update presale state"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        serializer = self.get_serializer(updated_presale)
+        return Response(serializer.data)

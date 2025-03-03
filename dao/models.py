@@ -4,6 +4,12 @@ from django.core.validators import FileExtensionValidator
 from core.validators.eth_network_validator import validate_network
 
 
+class PresaleStatus(models.TextChoices):
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+
+
 class Dao(models.Model):
     """dao model represents a dao entity with a unique name and associated user"""
 
@@ -85,4 +91,28 @@ class Stake(models.Model):
             models.Index(fields=["dao"]),
             models.Index(fields=["user"]),
             models.Index(fields=["-amount"]),
+        ]
+
+
+class Presale(models.Model):
+    dao = models.ForeignKey(Dao, on_delete=models.CASCADE, related_name="presales")
+    presale_contract = models.CharField(max_length=42, null=False, blank=False)
+    total_token_amount = models.DecimalField(max_digits=32, null=False, decimal_places=0)
+    initial_price = models.DecimalField(max_digits=32, null=False, decimal_places=0)
+    status = models.CharField(
+        max_length=20, choices=PresaleStatus.choices, default=PresaleStatus.ACTIVE
+    )
+    # Fields from getPresaleState
+    current_tier = models.PositiveIntegerField(default=0)
+    current_price = models.DecimalField(max_digits=32, default=0, decimal_places=0)
+    remaining_in_tier = models.DecimalField(max_digits=32, default=0, decimal_places=0)
+    total_remaining = models.DecimalField(max_digits=32, default=0, decimal_places=0)
+    total_raised = models.DecimalField(max_digits=32, default=0, decimal_places=0)
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["dao"]),
+            models.Index(fields=["status"]),
         ]

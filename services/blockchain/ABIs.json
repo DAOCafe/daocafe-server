@@ -54,6 +54,21 @@
       ]
     },
     {
+      "inputs": [
+        { "internalType": "uint256", "name": "proposalId", "type": "uint256" }
+      ],
+      "name": "getPresaleContract",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "proposalCount",
       "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
@@ -221,6 +236,21 @@
           "name": "presaleContract",
           "type": "address"
         }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "presale_abi": [
+    {
+      "inputs": [],
+      "name": "getPresaleState",
+      "outputs": [
+        { "internalType": "uint256", "name": "currentTier", "type": "uint256" },
+        { "internalType": "uint256", "name": "currentPrice", "type": "uint256" },
+        { "internalType": "uint256", "name": "remainingInTier", "type": "uint256" },
+        { "internalType": "uint256", "name": "totalRemaining", "type": "uint256" },
+        { "internalType": "uint256", "name": "totalRaised", "type": "uint256" }
       ],
       "stateMutability": "view",
       "type": "function"

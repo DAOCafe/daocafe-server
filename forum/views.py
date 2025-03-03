@@ -346,7 +346,7 @@ class DipSingleSyncronizationView(BaseDipStatusUpdate):
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        task = sync_dip_status.delay(instance.proposal_id)
+        task = sync_dip_status.delay(instance.id)
 
         return Response(
             {
