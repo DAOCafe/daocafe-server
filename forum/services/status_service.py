@@ -41,10 +41,11 @@ class UpdateStatus:
             The created Presale instance or None if creation fails
         """
         try:
-            # Check if a Presale instance already exists for this proposal
+            # Check if an ACTIVE Presale instance already exists for this DAO
             existing_presale = Presale.objects.filter(
                 dao_id=dip.dao_id,
-                presale_contract__isnull=False
+                presale_contract__isnull=False,
+                status=PresaleStatus.ACTIVE  # Only consider ACTIVE presales as existing
             ).first()
             
             if existing_presale:
@@ -138,6 +139,29 @@ class UpdateStatus:
                 # If proposal is executed and it's a presale proposal, create Presale instance
                 if status == DipStatus.EXECUTED and int(dip.proposal_type) == int(ProposalType.PRESALE):
                     self.create_presale_instance(dip, contract, proposal_id)
+                # If proposal is executed and it's a presale withdraw proposal, set presale status to COMPLETED
+                elif status == DipStatus.EXECUTED and int(dip.proposal_type) == int(ProposalType.PRESALE_WITHDRAW):
+                    # Get the presale contract address from the proposal data
+                    presale_contract_address = None
+                    if dip.proposal_data and "presale_contract" in dip.proposal_data:
+                        presale_contract_address = dip.proposal_data["presale_contract"]
+                    
+                    if presale_contract_address:
+                        # Find the presale instance with this contract address
+                        presale = Presale.objects.filter(
+                            dao_id=dip.dao_id,
+                            presale_contract__iexact=presale_contract_address
+                        ).first()
+                        
+                        if presale:
+                            # Update status to COMPLETED
+                            presale.status = PresaleStatus.COMPLETED
+                            presale.save()
+                            logger.info(f"Updated presale status to COMPLETED for presale {presale.id} with contract {presale_contract_address} after Presale Withdraw execution")
+                        else:
+                            logger.warning(f"No presale found with contract address {presale_contract_address} for DAO {dip.dao_id}")
+                    else:
+                        logger.warning(f"No presale contract address found in proposal data for DIP {dip.id}")
                 
                 dip.status = status
 

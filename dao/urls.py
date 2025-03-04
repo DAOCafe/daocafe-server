@@ -29,6 +29,11 @@ urlpatterns = [
         name="dao-presales-list",
     ),
     path(
+        "presales/<int:pk>/",
+        PresaleView.as_view({"get": "retrieve"}),
+        name="presale-detail",
+    ),
+    path(
         "presales/<int:id>/refresh/",
         PresaleRefreshView.as_view({"patch": "update"}),
         name="presale-refresh",

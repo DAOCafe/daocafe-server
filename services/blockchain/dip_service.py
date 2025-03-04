@@ -113,7 +113,7 @@ class DipConfirmationService(BlockchainClient):
                     })
                 elif proposal_type == 5:  # Presale Withdraw
                     complete_proposal.update({
-                        "presale_contract": additional_data[0],
+                        "presale_contract": additional_data,
                     })
                 # Types 6 and 7 (Pause/Unpause) don't have additional data
 

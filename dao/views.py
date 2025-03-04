@@ -142,6 +142,12 @@ class PresaleView(PublicBaseDaoView):
             return Presale.objects.filter(dao__slug=slug).order_by("-created_at")
         return Presale.objects.all().order_by("-created_at")
     
+    def get_object(self):
+        # If we're using the retrieve action, use the pk from kwargs
+        if self.action == 'retrieve':
+            return get_object_or_404(Presale, id=self.kwargs.get('pk'))
+        return super().get_object()
+    
     @extend_schema(
         parameters=[
             OpenApiParameter(name="slug", type=str, description="Filter presales by DAO slug"),
@@ -149,6 +155,15 @@ class PresaleView(PublicBaseDaoView):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+        
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="pk", type=int, description="Presale ID"),
+        ],
+        description="Retrieve a single presale by ID"
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
 
 @extend_schema(tags=["refresh"])

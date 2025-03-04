@@ -64,11 +64,22 @@ class DipSyncronizationService:
                 )
             elif proposal_type == 4:  # Presale Pause
                 result = (
-                    blockchain_data["presale_contract"].lower() == db_proposal_data["presale_contract"].lower()
+                    blockchain_data["presaleContract"].lower() == db_proposal_data["presaleContract"].lower()
                     and blockchain_data["pause"] == db_proposal_data["pause"]
                 )
             elif proposal_type == 5:  # Presale Withdraw
-                result = blockchain_data["presale_contract"].lower() == db_proposal_data["presale_contract"].lower()
+                 # Get presale contract from blockchain data
+                blockchain_presale_contract = blockchain_data["presale_contract"].lower()
+                
+                # Check if db_proposal_data has presale_contract or presaleContract
+                if "presale_contract" in db_proposal_data:
+                    db_presale_contract = db_proposal_data["presale_contract"].lower()
+                elif "presaleContract" in db_proposal_data:
+                    db_presale_contract = db_proposal_data["presaleContract"].lower()
+                else:
+                    return False
+                
+                result = blockchain_presale_contract == db_presale_contract
             elif proposal_type in [6, 7]:  # Pause/Unpause
                 # These don't have additional data to compare
                 result = True

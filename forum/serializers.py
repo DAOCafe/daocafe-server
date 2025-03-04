@@ -201,10 +201,10 @@ class DipSerializer(BaseForumSerializer):
         type_map = {
             "Transfer": "0",
             "Upgrade": "1",
-            "Module Upgrade": "2",
+            "ModuleUpgrade": "2",
             "Presale": "3",
-            "Presale Pause": "4",
-            "Presale Withdraw": "5",
+            "PresalePause": "4",
+            "PresaleWithdraw": "5",
             "Pause": "6",
             "Unpause": "7",
         }
