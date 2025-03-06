@@ -1,10 +1,13 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [ development, main ]
+  # Run tests on PRs to development and main
   pull_request:
     branches: [ development, main ]
+  
+  # Run full pipeline (including deploy) only on pushes to main
+  push:
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -67,10 +70,13 @@ jobs:
         run: |
           python manage.py test
 
-  build-and-push:
-    name: Build and Push Docker Image
+  build-and-deploy:
+    name: Build and Deploy
+    # Only run this job on pushes to main, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     
     steps:
       - name: Checkout code
@@ -93,7 +99,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=sha,format=short
       
       - name: Build and push Docker image
@@ -105,15 +110,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy-production:
-    name: Deploy to Production
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: production
-    
-    steps:
+      
       - name: Deploy to Production Server
         uses: appleboy/ssh-action@master
         with:
@@ -144,7 +141,7 @@ jobs:
             
             # Deploy with docker-compose (production mode - with NGINX)
             # Set environment variables for GitHub Container Registry image
-            export GITHUB_REPOSITORY="${{ github.repository }}"
+            export GITHUB_REPOSITORY=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export GITHUB_REF_NAME="${{ github.ref_name }}"
             
             # Pull the pre-built image from GitHub Container Registry
