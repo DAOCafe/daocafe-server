@@ -160,6 +160,9 @@ jobs:
             # Create a .env file to ensure DJANGO_ENV_FILE is properly set
             echo "DJANGO_ENV_FILE=.env.production" > .env
             
+            # Export variables from .env.production to the environment
+            export $(grep -v '^#' .env.production | xargs)
+            
             # Explicitly login before pulling or deploying
             echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u DAOCafe --password-stdin
 
