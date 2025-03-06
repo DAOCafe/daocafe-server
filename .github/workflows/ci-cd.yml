@@ -106,7 +106,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-
   deploy-production:
     name: Deploy to Production
     needs: build-and-push
@@ -126,22 +125,19 @@ jobs:
             mkdir -p /home/${{ secrets.PROD_USERNAME }}/daocafe-server
             cd /home/${{ secrets.PROD_USERNAME }}/daocafe-server
             
-            # Clone or update the repository
+            # Clone or update the repository using SSH
             if [ -d ".git" ]; then
               git pull
             else
-              git clone https://github.com/${{ github.repository }}.git .
+              git clone git@github.com:${{ github.repository }}.git .
             fi
             
             # Ensure SSL directory exists
             mkdir -p nginx/ssl
             
-            # Check if SSL certificates exist
-            if [ ! -f "nginx/ssl/certificate.pem" ] || [ ! -f "nginx/ssl/private.key" ]; then
-              echo "ERROR: SSL certificates not found. Deployment halted."
-              echo "Please upload your Cloudflare Origin certificates before deploying to production."
-              exit 1
-            fi
+            # Write SSL certificates from secrets
+            echo "${{ secrets.SSL_CERTIFICATE }}" > nginx/ssl/certificate.pem
+            echo "${{ secrets.SSL_PRIVATE_KEY }}" > nginx/ssl/private.key
             
             # Verify SSL certificate permissions
             chmod 600 nginx/ssl/private.key
