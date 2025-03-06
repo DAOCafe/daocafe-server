@@ -147,7 +147,7 @@ jobs:
             chmod 600 nginx/ssl/private.key
             
             # Login to GitHub Container Registry with the app token
-            echo "${{ steps.generate_token.outputs.token }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
             
             # Deploy with docker-compose (production mode - with NGINX)
             # Set environment variables for GitHub Container Registry image
@@ -160,6 +160,9 @@ jobs:
             # Create a .env file to ensure DJANGO_ENV_FILE is properly set
             echo "DJANGO_ENV_FILE=.env.production" > .env
             
+            # Explicitly login before pulling or deploying
+            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u DAOCafe --password-stdin
+
             # Start the services using the pulled image
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
             
