@@ -21,19 +21,20 @@ class BlockchainClient:
 
     def connect(self):
         provider_url = self.get_provider(self.network)
-        # Log the provider URL with redacted API key if present
         logged_url = provider_url
-        if "api_key" in provider_url:
-            provider_url = provider_url.format(
-                api_key=os.environ.get("ANKR_PROJECT_ID")
-            )
-            logged_url = provider_url.split("api_key=")[0] + "api_key=***"
+        
+        # Add Ankr API key as a query parameter if available
+        ankr_api_key = os.environ.get("ANKR_PROJECT_ID")
+        if ankr_api_key and "ankr.com" in provider_url:
+            provider_url = f"{provider_url}?apiKey={ankr_api_key}"
+            logged_url = f"{provider_url.split('?')[0]}?apiKey=***"
         
         logger.info(f"Attempting to connect to network {self.network} using provider: {logged_url}")
         
-        if "api_key" in provider_url and not os.environ.get("ANKR_PROJECT_ID"):
-            logger.error("ANKR_PROJECT_ID environment variable is not set")
-            raise ConnectionError("ANKR_PROJECT_ID environment variable is required but not set")
+        # Remove the API key check since it's now optional
+        # if "api_key" in provider_url and not os.environ.get("ANKR_PROJECT_ID"):
+        #     logger.error("ANKR_PROJECT_ID environment variable is not set")
+        #     raise ConnectionError("ANKR_PROJECT_ID environment variable is required but not set")
 
         web3 = None
         for attempt in range(1, self.retries + 1):
@@ -69,13 +70,13 @@ class BlockchainClient:
     @staticmethod
     def get_provider(network):
         provider_urls = {
-            1: "https://mainnet.infura.io/v3/{api_key}",
-            5: "https://goerli.infura.io/v3/{api_key}",
-            10: "https://optimism-mainnet.infura.io/v3/{api_key}",
-            56: "https://bsc-dataseed.binance.org/",
-            137: "https://polygon-mainnet.infura.io/v3/{api_key}",
-            42161: "https://arbitrum-mainnet.infura.io/v3/{api_key}",
-            11155111: "https://rpc.ankr.com/eth_sepolia/{api_key}",
+            1: "https://rpc.ankr.com/eth",
+            5: "https://rpc.ankr.com/eth_goerli",
+            10: "https://rpc.ankr.com/optimism",
+            56: "https://rpc.ankr.com/bsc",
+            137: "https://rpc.ankr.com/polygon",
+            42161: "https://rpc.ankr.com/arbitrum",
+            11155111: "https://rpc.ankr.com/eth_sepolia",
             1337: "http://host.docker.internal:8545",
         }
 
