@@ -26,6 +26,15 @@ class DipAPITests(APITestCase):
         cls.dao = cls.dao_factory.create_dao()
         cls.user = cls.dao.owner
 
+        # Create a stake for the user in the DAO (required for DIP creation)
+        from dao.models import Stake
+        Stake.objects.create(
+            user=cls.user,
+            dao=cls.dao,
+            amount=10**18,  # 1 token with 18 decimals
+            voting_power=10**18
+        )
+
         cls.dip_base = DipBaseMixin(dao=cls.dao, author=cls.user)
         cls.dip = cls.dip_base.create_dip()
 
@@ -128,7 +137,6 @@ class DipAPITests(APITestCase):
             format="json",
             **self.HTTP_AUTHORIZATION,
         )
-        logger.critical(f"response: {response}{response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, {"status": "liked"})
 

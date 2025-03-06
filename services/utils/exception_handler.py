@@ -15,6 +15,7 @@ from django.db.utils import IntegrityError
 from logging_config import logger
 from rest_framework.response import Response
 from rest_framework import status, serializers
+import redis
 
 
 class ErrorHandlingMixin:
@@ -23,8 +24,6 @@ class ErrorHandlingMixin:
     """
 
     def handle_exception(self, ex):
-        logger.info(f"exception type: {type(ex)}")
-
         if isinstance(ex, (NotFound, Http404, ObjectDoesNotExist)):
             return Response(
                 {"error": f"resource not found: {str(ex)}"},
@@ -72,6 +71,12 @@ class ErrorHandlingMixin:
         if isinstance(ex, IntegrityError):
             return Response(
                 {"error": f"database integrity error: {str(ex)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        if isinstance(ex, redis.exceptions.ConnectionError):
+            return Response(
+                {"error": f"redis connection error: {str(ex)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

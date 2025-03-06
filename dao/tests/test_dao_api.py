@@ -5,6 +5,8 @@ from rest_framework import status
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from unittest.mock import patch
+import tempfile
+import os
 
 from core.helpers.create_user import create_user
 
@@ -114,7 +116,7 @@ class DaoAPITests(APITestCase):
         }
 
         response = self.client.post(
-            f"{self.url_prefix}dao-fetch/", payload, **self.HTTP_AUTHORIZATION
+            f"{self.url_prefix}dao/fetch/", payload, **self.HTTP_AUTHORIZATION
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -148,12 +150,20 @@ class DaoAPITests(APITestCase):
             "network": 11155111,
         }
         fetch_response = self.client.post(
-            f"{self.url_prefix}dao-fetch/", fetch_payload, **self.HTTP_AUTHORIZATION
+            f"{self.url_prefix}dao/fetch/", fetch_payload, **self.HTTP_AUTHORIZATION
         )
         self.assertEqual(fetch_response.status_code, status.HTTP_201_CREATED)
 
         # Get the created DAO
         created_dao = Dao.objects.get(dao_contracts__dao_address=dao_address)
+
+        # Create a stake for the user in the DAO (required for DAO save)
+        Stake.objects.create(
+            user=self.user,
+            dao=created_dao,
+            amount=10**18,  # 1 token with 18 decimals
+            voting_power=10**18
+        )
 
         mock_has_staked.return_value = True
         mock_stake.return_value = {
@@ -163,19 +173,30 @@ class DaoAPITests(APITestCase):
             "dao": created_dao.id,
         }
 
-        with open("static/default-placeholder.jpg", "rb") as media_file:
-            payload = {
-                "id": created_dao.id,
-                "dao_image": SimpleUploadedFile(
-                    "media_file.jpg", media_file.read(), content_type="image/jpeg"
-                ),
-                "slug": "weirdo",
-                "description": "brief",
-            }
+        # Create a minimal valid JPEG image
+        from PIL import Image
+        import io
+        
+        # Create a small red image
+        image = Image.new('RGB', (100, 100), color='red')
+        image_io = io.BytesIO()
+        image.save(image_io, format='JPEG')
+        image_io.seek(0)
+        
+        payload = {
+            "id": created_dao.id,
+            "dao_image": SimpleUploadedFile(
+                "media_file.jpg", image_io.read(), content_type="image/jpeg"
+            ),
+            "slug": "weirdo",
+            "description": "brief",
+        }
 
         response = self.client.patch(
-            f"{self.url_prefix}dao-save/", payload, **self.HTTP_AUTHORIZATION
+            f"{self.url_prefix}dao/save/", payload, **self.HTTP_AUTHORIZATION
         )
+        # Print response data for debugging
+        print(f"Response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["slug"], payload["slug"])
 

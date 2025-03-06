@@ -59,6 +59,7 @@ jobs:
           DB_PASSWORD: secret
           SECRET_KEY: test_secret_key
           DEBUG: 'True'
+          REDIS_HOST: localhost
         run: |
           python manage.py test
 

@@ -95,5 +95,5 @@ class AuthenticationTests(TestCase):
             "network": 11155111,
         }
 
-        response = self.client.post(f"{self.url_prefix}dao-fetch/", payload)
+        response = self.client.post(f"{self.url_prefix}dao/fetch/", payload)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
