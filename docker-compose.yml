@@ -1,47 +1,12 @@
 services:
-  # NGINX service - only used in production
-  nginx:
-    image: nginx:alpine
-    profiles: ["production"]  # Only included when explicitly requested
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
-      - static_volume:/var/www/static
-      - media_volume:/var/www/media
-    depends_on:
-      - app
-    restart: always
-    networks:
-      - app-network
-
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - DEV=true
-    image: daocafe-server:latest
     restart: "on-failure"
-    # Expose port for development mode
-    ports:
-      - '8000:8000'
     volumes:
       - ./:/server
       - media_volume:/vol/web/media
       - static_volume:/vol/web/static
     networks:
       - app-network
-    command: >
-      sh -c "
-            /py/bin/python manage.py wait_for_db &&
-            /py/bin/python manage.py makemigrations &&
-            /py/bin/python manage.py migrate &&
-            /py/bin/python manage.py create_periodic_task &&
-            /py/bin/python manage.py collectstatic --noinput &&
-            /py/bin/python manage.py runserver 0.0.0.0:8000"
     depends_on:
       - db
       - redis
@@ -55,14 +20,9 @@ services:
       - ANKR_PROJECT_ID=${ANKR_PROJECT_ID}
 
   celery:
-    image: daocafe-server:latest
     restart: always
     networks:
       - app-network
-    command: >
-      sh -c "
-            /py/bin/python manage.py wait_for_db &&
-            watchmedo auto-restart --directory=./ --pattern='*.py' --recursive -- celery -A app worker --loglevel=info --pool=solo"
     depends_on:
       - redis
       - db
@@ -75,19 +35,14 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
     volumes:
       - ./:/server
+
   celery-beat:
-    image: daocafe-server:latest
     restart: always
     networks:
       - app-network
-    command: >
-      sh -c "
-            /py/bin/python manage.py wait_for_db &&
-            watchmedo auto-restart --directory=./ --pattern='*.py' --recursive -- celery -A app beat --loglevel=info"
     depends_on:
       - redis
       - db
-      # add dependency on db to resolve for the issue
     env_file:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
@@ -109,20 +64,15 @@ services:
       - POSTGRES_DB=${DB_NAME:-db}
       - POSTGRES_USER=${DB_USER:-dev}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
-
     volumes:
       - db-data:/var/lib/postgresql/data
 
   redis:
     image: redis:alpine
     command: redis-server --save 60 1 --loglevel warning
-    # Remove direct port exposure for security
-    # ports:
-    #   - "6379:6379"
     restart: always
     networks:
       - app-network
-
 
 networks:
   app-network:
