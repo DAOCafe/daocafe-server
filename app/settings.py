@@ -3,7 +3,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 
-load_dotenv()
+# Load the appropriate .env file based on environment
+# By default, load .env.development if no specific environment is set
+env_file = os.environ.get('DJANGO_ENV_FILE', '.env.development')
+load_dotenv(env_file)
+print(f"Loaded environment from: {env_file}")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,10 +15,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "nosecrets")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# 192.168 test machine on local network
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "192.168.0.106:8000"]
+# Hosts configuration based on environment
+if DEBUG:
+    # Development hosts
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "192.168.0.106:8000"]
+else:
+    # Production hosts - comma-separated list from environment variable
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 
 INSTALLED_APPS = [
@@ -103,11 +112,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "core.User"
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
+# CORS settings based on environment
+if DEBUG:
+    # Development origins
+    CORS_ALLOWED_ORIGINS = [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
+else:
+    # Production origins - comma-separated list from environment variable
+    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -176,12 +190,23 @@ SPECTACULAR_SETTINGS = {
 
 ######## JWT TOKEN CONFIG ########
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=360000),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1000),
-    # "ROTATE_REFRESH_TOKENS": True,
-    # "BLACKLIST_AFTER_ROTATION": True,
-}
+# JWT settings based on environment
+if DEBUG:
+    # Development JWT settings - long lifetimes for easier testing
+    SIMPLE_JWT = {
+        "ACCESS_TOKEN_LIFETIME": timedelta(minutes=360000),
+        "REFRESH_TOKEN_LIFETIME": timedelta(days=1000),
+        # "ROTATE_REFRESH_TOKENS": True,
+        # "BLACKLIST_AFTER_ROTATION": True,
+    }
+else:
+    # Production JWT settings - secure defaults
+    SIMPLE_JWT = {
+        "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+        "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+        "ROTATE_REFRESH_TOKENS": True,
+        "BLACKLIST_AFTER_ROTATION": True,
+    }
 
 
 # celery confs

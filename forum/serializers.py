@@ -221,7 +221,6 @@ class DipSerializer(BaseForumSerializer):
         return data
 
     def to_representation(self, instance):
-        logger.info("reached serializer")
         representation = super().to_representation(instance)
         representation["proposal_type"] = ProposalType(instance.proposal_type).label
         if not isinstance(representation.get("proposal_id"), int):

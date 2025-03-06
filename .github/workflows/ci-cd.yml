@@ -1,0 +1,149 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ development, main ]
+  pull_request:
+    branches: [ development, main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:17.2-alpine3.21
+        env:
+          POSTGRES_DB: db
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests
+        env:
+          DJANGO_ENV_FILE: .env.development
+          DB_HOST: localhost
+          DB_NAME: db
+          DB_USER: dev
+          DB_PASSWORD: secret
+          SECRET_KEY: test_secret_key
+          DEBUG: 'True'
+        run: |
+          python manage.py test
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=short
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  deploy-production:
+    name: Deploy to Production
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            # Create deployment directory if it doesn't exist
+            mkdir -p /home/${{ secrets.PROD_USERNAME }}/daocafe-server
+            cd /home/${{ secrets.PROD_USERNAME }}/daocafe-server
+            
+            # Clone or update the repository
+            if [ -d ".git" ]; then
+              git pull
+            else
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            # Ensure SSL directory exists
+            mkdir -p nginx/ssl
+            
+            # Check if SSL certificates exist
+            if [ ! -f "nginx/ssl/certificate.pem" ] || [ ! -f "nginx/ssl/private.key" ]; then
+              echo "ERROR: SSL certificates not found. Deployment halted."
+              echo "Please upload your Cloudflare Origin certificates before deploying to production."
+              exit 1
+            fi
+            
+            # Verify SSL certificate permissions
+            chmod 600 nginx/ssl/private.key
+            
+            # Deploy with docker-compose (production mode - with NGINX)
+            docker-compose pull
+            DJANGO_ENV_FILE=.env.production docker-compose --profile production up -d
+            
+            # Clean up unused images
+            docker system prune -af
