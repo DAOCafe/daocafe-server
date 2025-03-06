@@ -16,3 +16,4 @@ eth-abi>=5.0.1,<5.1
 celery>=5.4.0,<5.5
 django-celery-beat>=2.7.0,<2.8
 watchdog>=6.0,<6.1
+gunicorn>=22.0,<23.0

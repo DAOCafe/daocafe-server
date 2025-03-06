@@ -29,9 +29,9 @@ services:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
       - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
-      - POSTGRES_DB=${DB_NAME:-db}
-      - POSTGRES_USER=${DB_USER:-dev}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - ./:/server
 
@@ -46,9 +46,9 @@ services:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
       - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
-      - POSTGRES_DB=${DB_NAME:-db}
-      - POSTGRES_USER=${DB_USER:-dev}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - ./:/server
       - celerybeat-schedule:/var/celery
