@@ -17,19 +17,19 @@ services:
       - app-network
 
   app:
-    image: ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}
-    ports: []  # Remove port exposure in production (handled by nginx)
+    image: ghcr.io/daocafe/daocafe-server:${GITHUB_REF_NAME}
+    ports: [] 
     command: sh run.sh
 
   celery:
-    image: ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}
+    image: ghcr.io/daocafe/daocafe-server:${GITHUB_REF_NAME}
     command: >
       sh -c "
             /py/bin/python manage.py wait_for_db &&
             celery -A app worker --loglevel=info --pool=solo"
 
   celery-beat:
-    image: ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}
+    image: ghcr.io/daocafe/daocafe-server:${GITHUB_REF_NAME}
     command: >
       sh -c "
             /py/bin/python manage.py wait_for_db &&
