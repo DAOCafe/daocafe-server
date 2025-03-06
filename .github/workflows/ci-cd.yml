@@ -144,6 +144,7 @@ jobs:
             
             # Deploy with docker-compose (production mode - with NGINX)
             docker-compose pull
+            DJANGO_ENV_FILE=.env.production docker-compose --profile production build
             DJANGO_ENV_FILE=.env.production docker-compose --profile production up -d
             
             # Clean up unused images

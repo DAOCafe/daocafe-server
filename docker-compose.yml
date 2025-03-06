@@ -49,9 +49,9 @@ services:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
       - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
-      - POSTGRES_DB=db
-      - POSTGRES_USER=dev
-      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=${DB_NAME:-db}
+      - POSTGRES_USER=${DB_USER:-dev}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
       - ANKR_PROJECT_ID=${ANKR_PROJECT_ID}
 
   celery:
@@ -70,9 +70,9 @@ services:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
       - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
-      - POSTGRES_DB=db
-      - POSTGRES_USER=dev
-      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=${DB_NAME:-db}
+      - POSTGRES_USER=${DB_USER:-dev}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
     volumes:
       - ./:/server
   celery-beat:
@@ -92,9 +92,9 @@ services:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
       - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
-      - POSTGRES_DB=db
-      - POSTGRES_USER=dev
-      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=${DB_NAME:-db}
+      - POSTGRES_USER=${DB_USER:-dev}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
     volumes:
       - ./:/server
       - celerybeat-schedule:/var/celery
@@ -106,9 +106,9 @@ services:
     env_file:
       - ${DJANGO_ENV_FILE:-.env.development}
     environment:
-      - POSTGRES_DB=db
-      - POSTGRES_USER=dev
-      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=${DB_NAME:-db}
+      - POSTGRES_USER=${DB_USER:-dev}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
 
     volumes:
       - db-data:/var/lib/postgresql/data
