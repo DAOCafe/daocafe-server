@@ -1,18 +1,39 @@
 services:
+  # NGINX service - only used in production
+  nginx:
+    image: nginx:alpine
+    profiles: ["production"]  # Only included when explicitly requested
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - static_volume:/var/www/static
+      - media_volume:/var/www/media
+    depends_on:
+      - app
+    restart: always
+    networks:
+      - app-network
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - DEV=true
-    image: daoforum:latest
+    image: daocafe-server:latest
     restart: "on-failure"
+    # Expose port for development mode
     ports:
       - '8000:8000'
     volumes:
       - ./:/server
       - media_volume:/vol/web/media
       - static_volume:/vol/web/static
+    networks:
+      - app-network
     command: >
       sh -c "
             /py/bin/python manage.py wait_for_db &&
@@ -25,18 +46,19 @@ services:
       - db
       - redis
     env_file:
-      - .env
+      - ${DJANGO_ENV_FILE:-.env.development}
     environment:
+      - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
       - POSTGRES_DB=db
       - POSTGRES_USER=dev
       - POSTGRES_PASSWORD=secret
       - ANKR_PROJECT_ID=${ANKR_PROJECT_ID}
 
-      - DEBUG=True
-
   celery:
-    image: daoforum:latest
+    image: daocafe-server:latest
     restart: always
+    networks:
+      - app-network
     command: >
       sh -c "
             /py/bin/python manage.py wait_for_db &&
@@ -45,18 +67,19 @@ services:
       - redis
       - db
     env_file:
-      - .env
+      - ${DJANGO_ENV_FILE:-.env.development}
     environment:
+      - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
       - POSTGRES_DB=db
       - POSTGRES_USER=dev
       - POSTGRES_PASSWORD=secret
-
-      - DEBUG=True
     volumes:
       - ./:/server
   celery-beat:
-    image: daoforum:latest
+    image: daocafe-server:latest
     restart: always
+    networks:
+      - app-network
     command: >
       sh -c "
             /py/bin/python manage.py wait_for_db &&
@@ -66,27 +89,26 @@ services:
       - db
       # add dependency on db to resolve for the issue
     env_file:
-      - .env
+      - ${DJANGO_ENV_FILE:-.env.development}
     environment:
+      - DJANGO_ENV_FILE=${DJANGO_ENV_FILE:-.env.development}
       - POSTGRES_DB=db
       - POSTGRES_USER=dev
       - POSTGRES_PASSWORD=secret
-
-      - DEBUG=True
     volumes:
       - ./:/server
       - celerybeat-schedule:/var/celery
 
   db:
     image: postgres:17.2-alpine3.21
+    networks:
+      - app-network
     env_file:
-      - .env
+      - ${DJANGO_ENV_FILE:-.env.development}
     environment:
       - POSTGRES_DB=db
       - POSTGRES_USER=dev
       - POSTGRES_PASSWORD=secret
-
-      - DEBUG=True
 
     volumes:
       - db-data:/var/lib/postgresql/data
@@ -94,9 +116,17 @@ services:
   redis:
     image: redis:alpine
     command: redis-server --save 60 1 --loglevel warning
-    ports:
-      - "6379:6379"
+    # Remove direct port exposure for security
+    # ports:
+    #   - "6379:6379"
     restart: always
+    networks:
+      - app-network
+
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   db-data:

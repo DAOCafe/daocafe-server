@@ -40,10 +40,9 @@ RUN apk add --no-cache \
     rm -rf /tmp
 
 ENV PATH="/py/bin:$PATH"
-ENV PYTHONPATH="/server:$PYTHONPATH"
+ENV PYTHONPATH="/server"
 ENV DJANGO_SETTINGS_MODULE=app.settings
 
 USER django-user
 
 CMD ["sh", "run.sh"]
-

@@ -3,6 +3,7 @@ from web3 import Web3
 from eth_account.messages import encode_defunct
 import time
 import secrets
+import os
 from logging_config import logger
 
 
@@ -59,8 +60,12 @@ class NonceManager:
 
             if stored_nonce != nonce:
                 return False
-            # FIXME: UNCOMMENT IN PRODUCTION
-            # cache.delete(cache_key)
+                
+            # Delete nonce in production to prevent replay attacks
+            # In development, we might keep it for debugging purposes
+            if not os.environ.get('DEBUG', 'False').lower() == 'true':
+                cache.delete(cache_key)
+                
             return True
         except Exception as ex:
             return False

@@ -21,6 +21,7 @@ from .abstract.abstract_view import (
     BaseTransactionDip,
     BaseDipStatusUpdate,
 )
+from services.utils.permission_handler import StakeRequiredPermissionHandler
 from .serializers import (
     ThreadSerializer,
     ThreadDetailSerializer,
@@ -218,7 +219,47 @@ class DipLikeView(BaseLikeContentView):
 class DipView(BaseContentView):
     """
     dip view includes operations: list, retrieve, create for dip model
+    Requires at least 1 token staked in the specific DAO to create a DIP
     """
+    permission_classes = [StakeRequiredPermissionHandler]
+
+    def create(self, request, *args, **kwargs):
+        dao_slug = self.kwargs.get("slug")
+        if not dao_slug:
+            raise serializers.ValidationError("slug is required")
+
+        # Check if user has enough tokens staked in this specific DAO
+        min_stake_amount = 10**18  # 1 token with 18 decimals
+        
+        # Find the specific DAO
+        try:
+            from dao.models import Dao, Stake
+            dao = Dao.objects.get(slug=dao_slug)
+        except Dao.DoesNotExist:
+            raise serializers.ValidationError(f"DAO with slug '{dao_slug}' not found")
+        
+        # Check user's stake in this specific DAO
+        user_stake = Stake.objects.filter(
+            user=request.user,
+            dao=dao
+        ).first()
+        
+        if not user_stake or user_stake.amount < min_stake_amount:
+            return Response(
+                {"error": f"You need at least 1 {dao.symbol} token staked in this DAO to create a DIP"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Continue with the original method
+        serializer = self.get_serializer(
+            data=request.data, context={"request": request, "slug": dao_slug}
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
 
     def get_serializer_class(self):
         return DipDetailSerializer if self.action == "retrieve" else DipSerializer
@@ -324,13 +365,11 @@ class VotingHistoryView(BaseVoters):
     def get_queryset(self):
         context = self.get_serializer_context()
         dip_id = context["id"]
-        logger.critical("this is the one")
         return Vote.objects.filter(dip_id=dip_id).all()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["id"] = self.kwargs.get("id")
-        logger.critical("this is the one")
 
         return context
 
