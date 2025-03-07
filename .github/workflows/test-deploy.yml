@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Test and Deploy
 
 on:
   # Run tests on PRs to development and main
