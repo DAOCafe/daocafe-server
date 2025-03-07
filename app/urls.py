@@ -41,20 +41,25 @@ api_urlpatterns = [
 
 urlpatterns = [
     path("api/v1/", include(api_urlpatterns)),
-    path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
-    path(
-        "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="api-schema"),
-        name="api-docs",
-    ),
-    path(
-        "api/schema/redoc/",
-        SpectacularRedocView.as_view(url_name="schema"),
-        name="redoc",
-    ),
-    path("admin/", admin.site.urls),
+    path("management-console-secure/", admin.site.urls),  # Updated admin URL with non-standard path
 ]
 
+# Only add Swagger/documentation URLs in development mode
 if settings.DEBUG:
+    urlpatterns += [
+        path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
+        path(
+            "api/docs/",
+            SpectacularSwaggerView.as_view(url_name="api-schema"),
+            name="api-docs",
+        ),
+        path(
+            "api/schema/redoc/",
+            SpectacularRedocView.as_view(url_name="schema"),
+            name="redoc",
+        ),
+    ]
+    
+    # Static and media files for development
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

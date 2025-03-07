@@ -8,6 +8,7 @@ from rest_framework.exceptions import (
     NotAcceptable,
     UnsupportedMediaType,
     NotAuthenticated,
+    Throttled,
 )
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
@@ -80,6 +81,12 @@ class ErrorHandlingMixin:
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if isinstance(ex, Throttled):
+            return Response(
+                {"error": f"request throttled. try again in {ex.wait} seconds."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+            
         if isinstance(ex, (TypeError, ValueError)):
             return Response(
                 {"error": f"invalid input: {str(ex)}"},
