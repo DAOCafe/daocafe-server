@@ -105,7 +105,9 @@ MEDIA_ROOT = "/vol/web/media"
 
 STATIC_URL = "/static/"
 STATIC_ROOT = "/vol/web/static"
-
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
 # Default primary key field type
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

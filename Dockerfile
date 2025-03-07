@@ -45,5 +45,6 @@ ENV PYTHONPATH="/server"
 ENV DJANGO_SETTINGS_MODULE=app.settings
 
 USER django-user
+COPY --chown=django-user:django-user ./static/ /server/static/
 
 CMD ["sh", "run.sh"]
