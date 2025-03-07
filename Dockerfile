@@ -33,6 +33,7 @@ RUN apk add --no-cache \
         django-user && \
     # then create dirs and set permissions
     cp ./static/default-placeholder.jpg /vol/web/media/images/default-placeholder.jpg && \
+    cp -r ./static/* /vol/web/static/ && \
     chown -R django-user:django-user /vol /py /server && \
     chmod -R 755 /vol && \
     # cleanup
