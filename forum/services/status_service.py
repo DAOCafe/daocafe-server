@@ -172,6 +172,5 @@ class UpdateStatus:
     def convert_status(self, executed_state):
         status_map = {
             True: DipStatus.EXECUTED,
-            False: DipStatus.FAILED,
         }
         return status_map.get(executed_state)
