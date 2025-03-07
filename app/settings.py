@@ -131,6 +131,23 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    
+    # Add throttling configuration
+    "DEFAULT_THROTTLE_CLASSES": [
+        "services.utils.throttle.UserBurstRateThrottle",
+        "services.utils.throttle.UserSustainedRateThrottle",
+        "services.utils.throttle.AnonBurstRateThrottle",
+        "services.utils.throttle.AnonSustainedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Authenticated users
+        "user_burst": "60/minute",     # Short-term burst limit
+        "user_sustained": "1000/day",  # Long-term sustained limit
+        
+        # Anonymous users (IP-based)
+        "anon_burst": "30/minute",     # Short-term burst limit
+        "anon_sustained": "500/day",   # Long-term sustained limit
+    },
 }
 
 
