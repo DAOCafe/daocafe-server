@@ -7,11 +7,11 @@ from services.blockchain.dip_sync_service import (
 )
 from .models import Dip, Thread, Reply, Like, Vote
 from dao.models import Dao, Contract
-from .abstract.abstract_models import DipStatus
+from .packages.abstract.abstract_models import DipStatus
 from user.serializers import UserSerializer
 from django.shortcuts import get_object_or_404
 from logging_config import logger
-from .abstract.abstract_models import ProposalType
+from .packages.abstract.abstract_models import ProposalType
 from django.contrib.auth import get_user_model
 
 

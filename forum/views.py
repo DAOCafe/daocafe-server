@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # CUSTOM CLASSES
-from .abstract.abstract_view import (
+from .packages.abstract.abstract_view import (
     BaseVoters,
     BaseForumView,
     BaseReplyView,
@@ -221,6 +221,7 @@ class DipView(BaseContentView):
     dip view includes operations: list, retrieve, create for dip model
     Requires at least 1 token staked in the specific DAO to create a DIP
     """
+
     permission_classes = [StakeRequiredPermissionHandler]
 
     def create(self, request, *args, **kwargs):
@@ -230,24 +231,24 @@ class DipView(BaseContentView):
 
         # Check if user has enough tokens staked in this specific DAO
         min_stake_amount = 10**18  # 1 token with 18 decimals
-        
+
         # Find the specific DAO
         try:
             from dao.models import Dao, Stake
+
             dao = Dao.objects.get(slug=dao_slug)
         except Dao.DoesNotExist:
             raise serializers.ValidationError(f"DAO with slug '{dao_slug}' not found")
-        
+
         # Check user's stake in this specific DAO
-        user_stake = Stake.objects.filter(
-            user=request.user,
-            dao=dao
-        ).first()
-        
+        user_stake = Stake.objects.filter(user=request.user, dao=dao).first()
+
         if not user_stake or user_stake.amount < min_stake_amount:
             return Response(
-                {"error": f"You need at least 1 {dao.symbol} token staked in this DAO to create a DIP"},
-                status=status.HTTP_403_FORBIDDEN
+                {
+                    "error": f"You need at least 1 {dao.symbol} token staked in this DAO to create a DIP"
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Continue with the original method
