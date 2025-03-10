@@ -100,29 +100,26 @@ class AuthenticationTests(TestCase):
         response = self.client.post(f"{self.url_prefix}dao/fetch/", payload)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    # NOTE: This test is commented out because there's no token refresh endpoint in the project yet.
-    # If you add a token refresh endpoint (recommended for JWT best practices), you can uncomment this test.
-    #
-    # def test_token_refresh(self):
-    #     """Test that refresh tokens can be used to obtain new access tokens"""
-    #     refresh = RefreshToken.for_user(self.user)
-    #
-    #     payload = {
-    #         "refresh": str(refresh)
-    #     }
-    #
-    #     response = self.client.post(f"{self.url_prefix}token/refresh/", payload, content_type="application/json")
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertIn("access", response.data)
-    #
-    #     # Verify the new token works
-    #     new_token = response.data["access"]
-    #     headers = {"HTTP_AUTHORIZATION": f"Bearer {new_token}"}
-    #
-    #     # Try to access a protected endpoint with the new token
-    #     profile_response = self.client.get(f"{self.url_prefix}user/profile/", **headers)
-    #     self.assertNotEqual(profile_response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_token_refresh(self):
+        """Test that refresh tokens can be used to obtain new access tokens"""
+        refresh = RefreshToken.for_user(self.user)
+
+        payload = {"refresh": str(refresh)}
+
+        response = self.client.post(
+            f"{self.url_prefix}auth/token/refresh/",
+            payload,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+
+        new_token = response.data["access"]
+        headers = {"HTTP_AUTHORIZATION": f"Bearer {new_token}"}
+
+        profile_response = self.client.get(f"{self.url_prefix}user/profile/", **headers)
+        self.assertNotEqual(profile_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     @patch("eth_auth.eth_authentication.NonceManager.generate_nonce")
     def test_nonce_generation(self, mock_generate_nonce):
@@ -136,23 +133,15 @@ class AuthenticationTests(TestCase):
             f"{self.url_prefix}auth/nonce/", payload, content_type="application/json"
         )
 
-        # This might fail if the nonce endpoint is not set up at this URL
-        # If it fails, you'll need to adjust the URL to match your project's configuration
-        if response.status_code == 404:
-            self.skipTest("Nonce endpoint not found at expected URL")
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("nonce", response.data)
         self.assertIn("timestamp", response.data)
-
-        # Verify the nonce was generated with the correct address
         mock_generate_nonce.assert_called_once_with(eth_address.lower())
 
     @patch("eth_auth.eth_authentication.SignatureVerifier.verify_ethereum_signature")
     @patch("eth_auth.eth_authentication.NonceManager.verify_nonce")
     def test_signature_verification(self, mock_verify_nonce, mock_verify_signature):
         """Test the signature verification endpoint"""
-        # Mock the nonce and signature verification to return True
         mock_verify_nonce.return_value = True
         mock_verify_signature.return_value = True
 
@@ -160,7 +149,6 @@ class AuthenticationTests(TestCase):
         signature = "0x1234567890abcdef"
         message = "Test message with nonce"
 
-        # Set up the cache with a mock nonce
         nonce = "test_nonce"
         timestamp = int(now().timestamp())
         cache_key = f"{NonceManager.NONCE_PREFIX}{eth_address.lower()}"
@@ -173,21 +161,18 @@ class AuthenticationTests(TestCase):
         }
 
         response = self.client.post(
-            f"{self.url_prefix}auth/verify/", payload, content_type="application/json"
+            f"{self.url_prefix}auth/verify/",
+            payload,
+            content_type="application/json",
         )
-
-        # This might fail if the verify endpoint is not set up at this URL
-        # If it fails, you'll need to adjust the URL to match your project's configuration
-        if response.status_code == 404:
-            self.skipTest("Signature verification endpoint not found at expected URL")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
-        self.assertIn("is_success", response.data)
         self.assertTrue(response.data["is_success"])
 
-        # Verify the signature was verified with the correct parameters
+        mock_verify_nonce.assert_called_once_with(eth_address.lower(), nonce)
+
         mock_verify_signature.assert_called_once_with(
             message=message, signature=signature, eth_address=eth_address.lower()
         )
@@ -195,14 +180,12 @@ class AuthenticationTests(TestCase):
     @patch("eth_auth.eth_authentication.SignatureVerifier.verify_ethereum_signature")
     def test_invalid_signature(self, mock_verify_signature):
         """Test that invalid signatures are properly rejected"""
-        # Mock the signature verification to return False
         mock_verify_signature.return_value = False
 
         eth_address = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
         signature = "0x1234567890abcdef"
         message = "Test message with nonce"
 
-        # Set up the cache with a mock nonce
         nonce = "test_nonce"
         timestamp = int(now().timestamp())
         cache_key = f"{NonceManager.NONCE_PREFIX}{eth_address.lower()}"
@@ -218,12 +201,6 @@ class AuthenticationTests(TestCase):
             f"{self.url_prefix}auth/verify/", payload, content_type="application/json"
         )
 
-        # This might fail if the verify endpoint is not set up at this URL
-        # If it fails, you'll need to adjust the URL to match your project's configuration
-        if response.status_code == 404:
-            self.skipTest("Signature verification endpoint not found at expected URL")
-
-        # The response should indicate an error
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
 
     def test_invalid_eth_address(self):
@@ -236,12 +213,9 @@ class AuthenticationTests(TestCase):
             f"{self.url_prefix}auth/nonce/", payload, content_type="application/json"
         )
 
-        # This might fail if the nonce endpoint is not set up at this URL
-        # If it fails, you'll need to adjust the URL to match your project's configuration
         if response.status_code == 404:
             self.skipTest("Nonce endpoint not found at expected URL")
 
-        # The response should indicate an error
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
 
     def test_expired_nonce(self):
@@ -250,7 +224,6 @@ class AuthenticationTests(TestCase):
         signature = "0x1234567890abcdef"
         message = "Test message with nonce"
 
-        # Set up the cache with an expired nonce (timestamp from yesterday)
         nonce = "test_nonce"
         timestamp = int((now() - timedelta(days=1)).timestamp())
         cache_key = f"{NonceManager.NONCE_PREFIX}{eth_address.lower()}"
@@ -266,26 +239,12 @@ class AuthenticationTests(TestCase):
             f"{self.url_prefix}auth/verify/", payload, content_type="application/json"
         )
 
-        # This might fail if the verify endpoint is not set up at this URL
-        # If it fails, you'll need to adjust the URL to match your project's configuration
-        if response.status_code == 404:
-            self.skipTest("Signature verification endpoint not found at expected URL")
-
-        # The response should indicate an error
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
 
     def test_authenticated_request(self):
         """Test that authenticated requests are properly processed"""
-        # Create a valid authorization header
         headers = {"HTTP_AUTHORIZATION": f"Bearer {self.user_token}"}
 
-        # Try to access a protected endpoint
-        # This assumes you have a user profile endpoint that requires authentication
         response = self.client.get(f"{self.url_prefix}user/profile/", **headers)
 
-        # If this endpoint doesn't exist, the test will need to be adjusted
-        if response.status_code == 404:
-            self.skipTest("User profile endpoint not found at expected URL")
-
-        # The response should not be a 401 Unauthorized
         self.assertNotEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

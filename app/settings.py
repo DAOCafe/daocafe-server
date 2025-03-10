@@ -5,7 +5,7 @@ from datetime import timedelta
 
 # Load the appropriate .env file based on environment
 # By default, load .env.development if no specific environment is set
-env_file = os.environ.get('DJANGO_ENV_FILE', '.env.development')
+env_file = os.environ.get("DJANGO_ENV_FILE", ".env.development")
 load_dotenv(env_file)
 print(f"Loaded environment from: {env_file}")
 
@@ -15,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "nosecrets")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 # Hosts configuration based on environment
 if DEBUG:
@@ -23,7 +23,7 @@ if DEBUG:
     ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "192.168.0.106:8000"]
 else:
     # Production hosts - comma-separated list from environment variable
-    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+    ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 
 INSTALLED_APPS = [
@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "dao",
     "forum",
     "django_celery_beat",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 MIDDLEWARE = [
@@ -121,7 +122,7 @@ if DEBUG:
     ]
 else:
     # Production origins - comma-separated list from environment variable
-    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
 CORS_ALLOW_CREDENTIALS = True
 
 

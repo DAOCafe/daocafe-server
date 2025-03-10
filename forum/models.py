@@ -2,7 +2,7 @@ from django.db import models
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from forum.abstract.abstract_models import (
+from forum.packages.abstract.abstract_models import (
     BaseForumModel,
     GenericContentModel,
     UserGenericContentModel,

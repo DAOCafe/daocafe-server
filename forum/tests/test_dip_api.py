@@ -6,8 +6,8 @@ from rest_framework import status
 
 from core.helpers.create_user import create_user
 from dao.tests.dao_utils import DaoFactoryMixin
-from unittest.mock import patch
-from forum.models import Dip
+from unittest.mock import patch, MagicMock
+from forum.models import Dip, Vote
 from .forum_utils import DipBaseMixin
 
 from logging_config import logger
@@ -221,6 +221,46 @@ class DipAPITests(APITestCase):
 
         for key in self.pagination_keys:
             self.assertIn(key, response.data["data"])
+
+    @patch("forum.tasks.sync_votes_task.delay")
+    def test_dip_vote_refresh_is_successful(self, mock_sync_votes_task):
+        """Test that DIP vote synchronization works correctly"""
+        mock_task = MagicMock()
+        mock_task.id = "test-task-id"
+        mock_sync_votes_task.return_value = mock_task
+
+        response = self.client.post(
+            f"/api/v1/refresh/dip/{self.dip.id}/vote/",
+            format="json",
+            **self.HTTP_AUTHORIZATION,
+        )
+
+        # Verify the response
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn("task_id", response.data)
+        self.assertEqual(response.data["dip_id"], str(self.dip.id))
+        self.assertEqual(response.data["message"], "vote sync task queued successfully")
+
+        mock_sync_votes_task.assert_called_once_with(str(self.dip.id))
+
+    @patch("forum.tasks.sync_votes_task.delay")
+    def test_dip_vote_refresh_with_single_vote(self, mock_sync_votes_task):
+        """Test that DIP vote synchronization works with a single vote"""
+        # Mock the Celery task to return a task ID
+        mock_task = MagicMock()
+        mock_task.id = "test-task-id-2"
+        mock_sync_votes_task.return_value = mock_task
+
+        response = self.client.post(
+            f"/api/v1/refresh/dip/{self.dip.id}/vote/", **self.HTTP_AUTHORIZATION
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn("task_id", response.data)
+        self.assertEqual(response.data["dip_id"], str(self.dip.id))
+        self.assertEqual(response.data["message"], "vote sync task queued successfully")
+
+        mock_sync_votes_task.assert_called_once_with(str(self.dip.id))
 
     def test_like_reply_on_dip_is_successful(self):
         response_reply = self.client.post(
