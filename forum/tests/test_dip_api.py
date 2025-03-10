@@ -28,11 +28,12 @@ class DipAPITests(APITestCase):
 
         # Create a stake for the user in the DAO (required for DIP creation)
         from dao.models import Stake
+
         Stake.objects.create(
             user=cls.user,
             dao=cls.dao,
             amount=10**18,  # 1 token with 18 decimals
-            voting_power=10**18
+            voting_power=10**18,
         )
 
         cls.dip_base = DipBaseMixin(dao=cls.dao, author=cls.user)
@@ -42,6 +43,7 @@ class DipAPITests(APITestCase):
         cls.url_prefix = "/api/v1/dao/slugish/dips/"
         cls.token = RefreshToken.for_user(cls.user).access_token
         cls.HTTP_AUTHORIZATION = {"HTTP_AUTHORIZATION": f"Bearer {cls.token}"}
+        cls.pagination_keys = ["count", "next", "previous", "results"]
 
         # *NOTE: PAYLOAD TO USE ACROSS THE TESTS
         cls.payload = {
@@ -67,6 +69,30 @@ class DipAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertLessEqual(response.data["data"]["count"], sum([]) - 0x0 - 0b0 - 0o0)
         self.assertEqual(response.data["data"]["results"], [])
+
+    def test_dips_retrieve_paginated_response(self):
+        response = self.client.get(f"{self.url_prefix}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for key in self.pagination_keys:
+            self.assertIn(key, response.data["data"])
+
+    def test_dip_retrieve_single_dip(self):
+        response = self.client.get(f"{self.url_prefix}{self.dip.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["content"], self.dip.content)
+        self.assertEqual(
+            response.data["proposal_type"], self.dip.get_proposal_type_display()
+        )
+
+    def test_single_dip_retrieval_increments_views_count(self):
+        response = self.client.get(
+            f"{self.url_prefix}{self.dip.id}/", **self.HTTP_AUTHORIZATION
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["views_count"], 0x1)
 
     @patch("services.blockchain.dip_service.DipConfirmationService.get_proposal_data")
     def test_dip_retrievies_populated_list(self, proposal_data):
@@ -154,3 +180,67 @@ class DipAPITests(APITestCase):
                 "msg": f"removed like from: Dip {self.dip.id}",
             },
         )
+
+    # *NOTE: TEST REPLIES
+    def test_reply_retrieve_empty_list_successful(self):
+        response = self.client.get(f"{self.url_prefix}{self.dip.id}/replies/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(response.data["data"]["count"], sum([]) - 0x0 - 0b0 - 0o0)
+        self.assertEqual(response.data["data"]["results"], [])
+
+    def test_reply_retrieve_paginated_response(self):
+        response = self.client.get(f"{self.url_prefix}{self.dip.id}/replies/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for key in self.pagination_keys:
+            self.assertIn(key, response.data["data"])
+
+    def test_reply_post_successful(self):
+        response = self.client.post(
+            f"{self.url_prefix}{self.dip.id}/replies/",
+            self.payload,
+            format="json",
+            **self.HTTP_AUTHORIZATION,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_retrieved = self.client.get(f"{self.url_prefix}{self.dip.id}/replies/")
+
+        self.assertEqual(response_retrieved.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["content"],
+            response_retrieved.data["data"]["results"][0]["content"],
+        )
+
+    def test_dip_voters_returns_paginated_response(self):
+        response = self.client.get(f"{self.url_prefix}{self.dip.id}/voters/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for key in self.pagination_keys:
+            self.assertIn(key, response.data["data"])
+
+    def test_like_reply_on_dip_is_successful(self):
+        response_reply = self.client.post(
+            f"{self.url_prefix}{self.dip.id}/replies/",
+            self.payload,
+            format="json",
+            **self.HTTP_AUTHORIZATION,
+        )
+        self.assertEqual(response_reply.status_code, status.HTTP_201_CREATED)
+        response_like = self.client.post(
+            f"{self.url_prefix}{self.dip.id}/replies/{response_reply.data['id']}/like/",
+            **self.HTTP_AUTHORIZATION,
+        )
+
+        self.assertEqual(response_like.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_like.data, {"status": "liked"})
+
+        response_unlike = self.client.post(
+            f"{self.url_prefix}{self.dip.id}/replies/{response_reply.data['id']}/like/",
+            **self.HTTP_AUTHORIZATION,
+        )
+        self.assertEqual(response_unlike.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_unlike.data["status"], "unliked")
