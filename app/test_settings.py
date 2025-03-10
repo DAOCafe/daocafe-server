@@ -3,7 +3,7 @@ import tempfile
 from .settings import *
 
 # Override Redis host for tests
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 
 # Override Redis cache configuration
 CACHES = {
@@ -23,3 +23,12 @@ MEDIA_ROOT = tempfile.mkdtemp()
 # Disable permissions check for media directory
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = None
 FILE_UPLOAD_PERMISSIONS = 0o644
+
+# Disable throttling for tests to prevent 429 responses
+REST_FRAMEWORK = REST_FRAMEWORK.copy()
+REST_FRAMEWORK.update(
+    {
+        "DEFAULT_THROTTLE_CLASSES": [],
+        "DEFAULT_THROTTLE_RATES": {},
+    }
+)

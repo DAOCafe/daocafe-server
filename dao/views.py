@@ -62,8 +62,6 @@ class StakeView(BaseDaoView):
         dao_id = self.request.GET.get("id")
         slug = self.request.GET.get("slug")
 
-        logger.debug(f"dao_id: {dao_id}\ndao_slug: {slug}")
-
         queryset = Stake.objects.all()
         if dao_id:
             queryset = queryset.filter(dao__id=dao_id)
@@ -133,34 +131,36 @@ class PresaleView(PublicBaseDaoView):
     View for accessing presale information
     Supports: list, retrieve for all users
     """
-    
+
     serializer_class = PresaleSerializer
-    
+
     def get_queryset(self):
         slug = self.kwargs.get("slug")
         if slug:
             return Presale.objects.filter(dao__slug=slug).order_by("-created_at")
         return Presale.objects.all().order_by("-created_at")
-    
+
     def get_object(self):
         # If we're using the retrieve action, use the pk from kwargs
-        if self.action == 'retrieve':
-            return get_object_or_404(Presale, id=self.kwargs.get('pk'))
+        if self.action == "retrieve":
+            return get_object_or_404(Presale, id=self.kwargs.get("pk"))
         return super().get_object()
-    
+
     @extend_schema(
         parameters=[
-            OpenApiParameter(name="slug", type=str, description="Filter presales by DAO slug"),
+            OpenApiParameter(
+                name="slug", type=str, description="Filter presales by DAO slug"
+            ),
         ]
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
-        
+
     @extend_schema(
         parameters=[
             OpenApiParameter(name="pk", type=int, description="Presale ID"),
         ],
-        description="Retrieve a single presale by ID"
+        description="Retrieve a single presale by ID",
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
@@ -171,36 +171,35 @@ class PresaleRefreshView(BaseDaoView):
     """
     View for refreshing presale state from the blockchain
     """
-    
+
     def get_serializer_class(self):
         return PresaleSerializer
-    
+
     def get_object(self):
         presale_id = self.kwargs.get("id")
         return get_object_or_404(Presale, id=presale_id)
-    
+
     def update(self, request, *args, **kwargs):
         presale = self.get_object()
-        
+
         # Get the contract for the presale's DAO
         contract = get_object_or_404(Contract, dao_id=presale.dao_id)
-        
+
         # Update the presale state
         presale_service = PresaleService(
-            presale_contract=presale.presale_contract,
-            network=contract.network
+            presale_contract=presale.presale_contract, network=contract.network
         )
         updated_presale = presale_service.update_presale_state(presale)
-        
+
         if not updated_presale:
             return Response(
                 {"error": "Failed to update presale state"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        
+
         # Fetch and process events
         presale_service.fetch_presale_events(updated_presale)
-        
+
         serializer = self.get_serializer(updated_presale)
         return Response(serializer.data)
 
@@ -211,17 +210,26 @@ class PresaleTransactionsView(PublicBaseDaoView):
     View for accessing presale transaction history
     Supports: list for all users with pagination
     """
+
     serializer_class = PresaleTransactionSerializer
     pagination_class = CustomPagination
-    
+
     def get_queryset(self):
         presale_id = self.kwargs.get("id")
-        return PresaleTransaction.objects.filter(presale_id=presale_id).order_by('-timestamp')
-    
+        return PresaleTransaction.objects.filter(presale_id=presale_id).order_by(
+            "-timestamp"
+        )
+
     @extend_schema(
         parameters=[
-            OpenApiParameter(name="page", type=int, description="Page number for pagination"),
-            OpenApiParameter(name="page_size", type=int, description="Number of items per page (max 10)"),
+            OpenApiParameter(
+                name="page", type=int, description="Page number for pagination"
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=int,
+                description="Number of items per page (max 10)",
+            ),
         ]
     )
     def list(self, request, *args, **kwargs):
