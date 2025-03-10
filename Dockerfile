@@ -33,6 +33,7 @@ RUN apk add --no-cache \
         django-user && \
     # then create dirs and set permissions
     cp ./static/default-placeholder.jpg /vol/web/media/images/default-placeholder.jpg && \
+    cp -r ./static/* /vol/web/static/ && \
     chown -R django-user:django-user /vol /py /server && \
     chmod -R 755 /vol && \
     # cleanup
@@ -44,5 +45,6 @@ ENV PYTHONPATH="/server"
 ENV DJANGO_SETTINGS_MODULE=app.settings
 
 USER django-user
+COPY --chown=django-user:django-user ./static/ /server/static/
 
 CMD ["sh", "run.sh"]
