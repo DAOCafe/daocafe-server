@@ -72,9 +72,7 @@ class CustomPermissionHandler(BasePermission):
         auth_result = self.authenticate(request)
         if not auth_result:
             raise AuthenticationFailed(
-                {
-                    "error": "authentication credentials were not provided",
-                }
+                "authentication credentials were not provided",
             )
         user, token = auth_result
         request.user = user
@@ -113,38 +111,39 @@ class StakeRequiredPermissionHandler(CustomPermissionHandler):
     Permission handler that extends CustomPermissionHandler to also check
     if the user has enough tokens staked in the specific DAO when creating a DIP.
     """
-    
+
     def has_permission(self, request, view):
         # First check the parent permissions
         if not super().has_permission(request, view):
             return False
-            
+
         # Only check stake for DIP creation with POST method
         url_path = self.resolve_url(request)
         if url_path == "dip-create" and request.method == "POST":
             # Get the DAO slug from the URL
-            dao_slug = request.resolver_match.kwargs.get('slug')
+            dao_slug = request.resolver_match.kwargs.get("slug")
             if not dao_slug:
                 return False
-                
+
             # Check if user has enough tokens staked in this specific DAO
             min_stake_amount = 10**18  # 1 token with 18 decimals
-            
+
             # Find the specific DAO
             try:
                 dao = Dao.objects.get(slug=dao_slug)
             except Dao.DoesNotExist:
-                raise PermissionDenied({"error": f"DAO with slug '{dao_slug}' not found"})
-            
+                raise PermissionDenied(
+                    {"error": f"DAO with slug '{dao_slug}' not found"}
+                )
+
             # Check user's stake in this specific DAO
-            user_stake = Stake.objects.filter(
-                user=request.user,
-                dao=dao
-            ).first()
-            
+            user_stake = Stake.objects.filter(user=request.user, dao=dao).first()
+
             if not user_stake or user_stake.amount < min_stake_amount:
                 raise PermissionDenied(
-                    {"error": f"You need at least 1 {dao.symbol} token staked in this DAO to create a DIP"}
+                    {
+                        "error": f"You need at least 1 {dao.symbol} token staked in this DAO to create a DIP"
+                    }
                 )
-                
+
         return True
