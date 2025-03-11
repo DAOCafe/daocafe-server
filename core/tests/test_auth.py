@@ -107,7 +107,7 @@ class AuthenticationTests(TestCase):
         payload = {"refresh": str(refresh)}
 
         response = self.client.post(
-            f"{self.url_prefix}auth/token/refresh/",
+            f"{self.url_prefix}auth/refresh/",
             payload,
             content_type="application/json",
         )

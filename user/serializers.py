@@ -29,3 +29,16 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["eth_address", "nickname", "email", "image", "date_joined"]
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Convert image field to full URL if it exists
+        if representation.get('image') and instance.image:
+            request = self.context.get('request')
+            if request is not None:
+                # Build absolute URI using the request's scheme and host
+                representation['image'] = request.build_absolute_uri(instance.image.url)
+            else:
+                # Fallback to relative URL if request is not available
+                representation['image'] = instance.image.url
+        return representation

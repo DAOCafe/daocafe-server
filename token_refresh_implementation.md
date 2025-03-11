@@ -21,7 +21,7 @@ api_urlpatterns = [
     # existing patterns...
 
     # Add this line:
-    path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+    path("refresh/", TokenRefreshView.as_view(), name="token-refresh"),
 
     # other patterns...
 ]
@@ -64,7 +64,7 @@ python manage.py migrate
 Clients can use the endpoint by sending a POST request with the refresh token:
 
 ```
-POST /api/v1/token/refresh/
+POST /api/v1/refresh/
 Content-Type: application/json
 
 {
