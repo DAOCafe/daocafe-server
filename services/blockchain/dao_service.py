@@ -12,7 +12,7 @@ FACTORY_ADDRESSES = {
     56: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # BSC (placeholder)
     137: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Polygon (placeholder)
     42161: "0x1A37E7D5594E3F6a990A412463803daFd7456f91",  # Arbitrum (placeholder)
-    11155111: "0x72d90b94cbe0dC2cd111a1eb6e29d01b9CDC3B38",  # Sepolia (placeholder)
+    11155111: "0x7714abfF855b5FE35e84Cdd4909aCfDc4B22024d",  # Sepolia (placeholder)
     1337: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",  # Local Hardhat
 }
 
