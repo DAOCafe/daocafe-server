@@ -1,3 +1,5 @@
+"""Views for Ethereum authentication API"""
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,7 +18,10 @@ from services.utils.exception_handler import ErrorHandlingMixin
 
 
 class NonceManagerView(ErrorHandlingMixin, APIView):
+    """View for generating authentication nonces for Ethereum addresses."""
+    
     def handle_exception(self, ex):
+        """Handle and log exceptions."""
         logger.error(f"Exception in NonceManagerView: {str(ex)}")
         logger.error(traceback.format_exc())
         return super().handle_exception(ex)
@@ -37,19 +42,25 @@ class NonceManagerView(ErrorHandlingMixin, APIView):
         },
     )
     def post(self, request):
+        """Generate a nonce for the provided Ethereum address.
+        
+        Args:
+            request: HTTP request with eth_address in the body
+            
+        Returns:
+            Response: JSON response with nonce and timestamp
+        """
         try:
-            logger.info(f"Nonce request received: {request.data}")
+            logger.info(f"Nonce request received")
             
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
-            
-            logger.info(f"Nonce request validated: {serializer.validated_data}")
             
             response = serializer.create(serializer.validated_data)
             
             # Ensure response contains nonce and timestamp keys
             if 'nonce' in response and 'timestamp' in response:
-                logger.info(f"Nonce generated successfully: {response}")
+                logger.info(f"Nonce generated successfully")
                 return Response(response)
             else:
                 logger.warning("Redis unavailable, returning mock nonce for tests")
@@ -65,7 +76,10 @@ class NonceManagerView(ErrorHandlingMixin, APIView):
 
 
 class SignatureVerifierView(ErrorHandlingMixin, APIView):
+    """View for verifying Ethereum signatures and issuing JWT tokens."""
+    
     def handle_exception(self, ex):
+        """Handle and log exceptions."""
         logger.error(f"Exception in SignatureVerifierView: {str(ex)}")
         logger.error(traceback.format_exc())
         return super().handle_exception(ex)
@@ -79,27 +93,30 @@ class SignatureVerifierView(ErrorHandlingMixin, APIView):
             200: {
                 "type": "object",
                 "properties": {
-                    "tokens": {
-                        "type": "object",
-                        "properties": {
-                            "refresh": {"type": "string"},
-                            "access": {"type": "string"},
-                        },
-                    },
-                    "success": {"type": "boolean"},
+                    "is_success": {"type": "boolean"},
+                    "refresh": {"type": "string"},
+                    "access": {"type": "string"},
                 },
             }
         },
     )
     def post(self, request):
+        """Verify signature and issue JWT tokens.
+        
+        Args:
+            request: HTTP request with eth_address, signature, and message
+            
+        Returns:
+            Response: JSON response with JWT tokens
+        """
         try:
-            logger.info(f"Signature verification request received: {request.data}")
+            logger.info(f"Signature verification request received")
             
             # Mask the signature in logs for security
             if 'signature' in request.data:
                 log_data = request.data.copy()
                 log_data['signature'] = log_data['signature'][:10] + '...'
-                logger.info(f"Signature verification request (masked): {log_data}")
+                logger.debug(f"Signature verification request (masked): {log_data}")
             
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -107,6 +124,7 @@ class SignatureVerifierView(ErrorHandlingMixin, APIView):
             eth_address = serializer.validated_data["eth_address"]
             logger.info(f"Signature validated for address: {eth_address}")
 
+            # Get or create user
             User = get_user_model()
             user, created = User.objects.get_or_create(eth_address=eth_address.lower())
             
@@ -115,6 +133,7 @@ class SignatureVerifierView(ErrorHandlingMixin, APIView):
             else:
                 logger.info(f"Found existing user for address: {eth_address}")
                 
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             
             response_data = {
@@ -124,7 +143,7 @@ class SignatureVerifierView(ErrorHandlingMixin, APIView):
             }
             
             logger.info(f"Authentication successful for address: {eth_address}")
-            return Response(response_data, status=200)
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as ex:
             logger.error(f"Unexpected error in signature verification: {str(ex)}")
             logger.error(traceback.format_exc())

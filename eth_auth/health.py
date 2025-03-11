@@ -11,11 +11,19 @@ from logging_config import logger
 
 
 class HealthCheckView(APIView):
-    """Health check endpoint to verify Redis connection"""
+    """Health check endpoint to verify Redis connection and authentication system status."""
+    
     permission_classes = [AllowAny]
 
     def get(self, request):
-        """Check Redis connection by setting and getting a test value"""
+        """Check Redis connection and authentication system health.
+        
+        Args:
+            request: HTTP request
+            
+        Returns:
+            Response: JSON response with health status
+        """
         try:
             logger.info("Health check requested")
             
@@ -25,11 +33,9 @@ class HealthCheckView(APIView):
             
             # Try to set a value in Redis
             cache_set_success = cache.set(test_key, test_value, 60)
-            logger.info(f"Cache set result: {cache_set_success}")
             
             # Try to get the value back
             retrieved_value = cache.get(test_key)
-            logger.info(f"Retrieved value: {retrieved_value}")
             
             # Check if Redis is working correctly
             redis_ok = retrieved_value == test_value
@@ -55,6 +61,7 @@ class HealthCheckView(APIView):
             except Exception as e:
                 logger.error(f"Error accessing Redis client: {str(e)}")
             
+            # Prepare response
             response_data = {
                 "status": "healthy" if redis_ok else "unhealthy",
                 "redis_connection": "ok" if redis_ok else "failed",
@@ -69,6 +76,7 @@ class HealthCheckView(APIView):
             
             status_code = status.HTTP_200_OK if redis_ok else status.HTTP_503_SERVICE_UNAVAILABLE
             
+            logger.info(f"Health check result: {response_data['status']}")
             return Response(response_data, status=status_code)
         except Exception as ex:
             logger.error(f"Health check failed: {str(ex)}")
