@@ -109,7 +109,17 @@ class StakeSerializer(serializers.ModelSerializer):
         user = instance.user
         representation["user"] = user.nickname
         representation["eth_address"] = user.eth_address
-        representation["image"] = user.image.url if user.image else None
+        
+        # Handle image URL with absolute URI if request is available
+        if user.image:
+            request = self.context.get('request')
+            if request is not None:
+                representation["image"] = request.build_absolute_uri(user.image.url)
+            else:
+                representation["image"] = user.image.url
+        else:
+            representation["image"] = None
+            
         return representation
 
 
@@ -173,6 +183,17 @@ class DaoCompleteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        
+        # Convert image fields to absolute URLs if request is available
+        request = self.context.get('request')
+        if request is not None:
+            # Handle dao_image
+            if 'dao_image' in representation and instance.dao_image:
+                representation['dao_image'] = request.build_absolute_uri(instance.dao_image.url)
+            
+            # Handle cover_image
+            if 'cover_image' in representation and instance.cover_image:
+                representation['cover_image'] = request.build_absolute_uri(instance.cover_image.url)
 
         for key in [
             "is_active",
@@ -266,6 +287,17 @@ class DaoActiveSerializer(serializers.ModelSerializer):
         # Ensure total_supply is a string
         if "total_supply" in representation:
             representation["total_supply"] = str(representation["total_supply"])
+            
+        # Convert image fields to absolute URLs if request is available
+        request = self.context.get('request')
+        if request is not None:
+            # Handle dao_image
+            if 'dao_image' in representation and instance.dao_image:
+                representation['dao_image'] = request.build_absolute_uri(instance.dao_image.url)
+            
+            # Handle cover_image
+            if 'cover_image' in representation and instance.cover_image:
+                representation['cover_image'] = request.build_absolute_uri(instance.cover_image.url)
 
         return representation
 

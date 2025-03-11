@@ -10,6 +10,6 @@ app_name = "eth_auth"
 urlpatterns = [
     path("nonce/", NonceManagerView.as_view(), name="nonce"),
     path("verify/", SignatureVerifierView.as_view(), name="signature"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+    path("refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("health/", HealthCheckView.as_view(), name="health-check"),
 ]

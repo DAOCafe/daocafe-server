@@ -43,7 +43,7 @@ class UserApiView(BaseUserView):
     def user_profile(self, request):
         user_instance = request.user
 
-        serializer = UserDetailSerializer(user_instance)
+        serializer = UserDetailSerializer(user_instance, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     ####Patch endpoint for user####

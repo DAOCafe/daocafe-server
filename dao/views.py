@@ -100,6 +100,11 @@ class DaoCompleteView(BaseDaoView):
     def get_object(self):
         dao_id = self.request.data.get("id")
         return Dao.objects.get(id=dao_id)
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
 
 
 # RETRIEVE ACTIVE DAOS REQUIRES NO AUTH
@@ -145,6 +150,11 @@ class PresaleView(PublicBaseDaoView):
         if self.action == "retrieve":
             return get_object_or_404(Presale, id=self.kwargs.get("pk"))
         return super().get_object()
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
 
     @extend_schema(
         parameters=[
@@ -179,6 +189,11 @@ class PresaleRefreshView(BaseDaoView):
         presale_id = self.kwargs.get("id")
         return get_object_or_404(Presale, id=presale_id)
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+        
     def update(self, request, *args, **kwargs):
         presale = self.get_object()
 
@@ -219,6 +234,11 @@ class PresaleTransactionsView(PublicBaseDaoView):
         return PresaleTransaction.objects.filter(presale_id=presale_id).order_by(
             "-timestamp"
         )
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
 
     @extend_schema(
         parameters=[
