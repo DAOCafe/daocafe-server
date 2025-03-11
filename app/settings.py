@@ -115,6 +115,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "core.User"
 
+# Import default CORS headers
+from corsheaders.defaults import default_headers
+
 # CORS settings based on environment
 if DEBUG:
     # Development origins
@@ -126,6 +129,12 @@ else:
     # Production origins - comma-separated list from environment variable
     CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
 CORS_ALLOW_CREDENTIALS = True
+
+# Add Sentry headers to allowed CORS headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'sentry-trace',
+    'baggage',
+]
 
 
 REST_FRAMEWORK = {

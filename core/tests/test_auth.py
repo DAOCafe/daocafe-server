@@ -171,10 +171,11 @@ class AuthenticationTests(TestCase):
         self.assertIn("refresh", response.data)
         self.assertTrue(response.data["is_success"])
 
-        mock_verify_nonce.assert_called_once_with(eth_address.lower(), nonce)
+        mock_verify_nonce.assert_called_once_with(eth_address.lower(), nonce, delete_on_success=False)
 
         mock_verify_signature.assert_called_once_with(
-            message=message, signature=signature, eth_address=eth_address.lower()
+            message=message, signature=signature, eth_address=eth_address.lower(), 
+            stored_nonce=nonce, timestamp=timestamp
         )
 
     @patch("eth_auth.eth_authentication.SignatureVerifier.verify_ethereum_signature")
