@@ -253,3 +253,17 @@ CELERY_TIMEZONE = "UTC"
 
 # Blockchain settings
 BLOCKCHAIN_SCAN_BLOCK_RANGE = 10000  # Default number of blocks to scan for events
+
+# HTTPS settings
+# Tell Django to trust the X-Forwarded-Proto header from the proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Use the X-Forwarded-Host header from the proxy
+USE_X_FORWARDED_HOST = True
+
+# Use the X-Forwarded-Port header from the proxy
+USE_X_FORWARDED_PORT = True
+
+# Only needed if you want to redirect all HTTP to HTTPS at the Django level
+# (nginx is already doing this, so it's optional)
+SECURE_SSL_REDIRECT = False
