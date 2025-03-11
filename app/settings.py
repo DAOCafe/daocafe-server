@@ -162,6 +162,12 @@ REST_FRAMEWORK = {
     },
 }
 
+# Hide browsable API in production
+if not DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = [
+        "rest_framework.renderers.JSONRenderer",
+    ]
+
 
 ######## REDIS CONFIG ########
 
