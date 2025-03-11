@@ -97,7 +97,7 @@ def sync_votes_task(self, dip_id):
         dict:
     """
     from forum.models import Dip
-    from .services.vote_service import VoteService
+    from .packages.services.vote_service import VoteService
 
     try:
         dip = Dip.objects.get(id=dip_id)
@@ -133,7 +133,7 @@ def sync_dip_status(self, dip_id):
     Returns:
         dict: updated proposal data
     """
-    from .services.status_service import UpdateStatus
+    from .packages.services.status_service import UpdateStatus
     from .models import Dip
 
     try:
