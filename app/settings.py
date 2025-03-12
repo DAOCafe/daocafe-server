@@ -1,11 +1,9 @@
 import os
-import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
-import django.core.exceptions
 
 # Load the appropriate .env file based on environment
 # By default, load .env.development if no specific environment is set
@@ -289,48 +287,54 @@ if not DEBUG:
         environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
     )
 
-# Custom filter to ignore DisallowedHost errors
-class IgnoreDisallowedHostFilter(logging.Filter):
-    def filter(self, record):
-        # Return False to ignore the log record if it's a DisallowedHost error
-        return not (
-            record.exc_info 
-            and record.exc_info[0] == django.core.exceptions.DisallowedHost
-        )
-
-# Logging configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'ignore_disallowed_host': {
-            '()': 'app.settings.IgnoreDisallowedHostFilter',
+# Configure logging to filter out DisallowedHost errors in production
+# This is only applied when not running tests
+if not os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('test_settings'):
+    import logging
+    import django.core.exceptions
+    
+    # Custom filter to ignore DisallowedHost errors
+    class IgnoreDisallowedHostFilter(logging.Filter):
+        def filter(self, record):
+            # Return False to ignore the log record if it's a DisallowedHost error
+            return not (
+                record.exc_info 
+                and record.exc_info[0] == django.core.exceptions.DisallowedHost
+            )
+    
+    # Logging configuration
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'filters': {
+            'ignore_disallowed_host': {
+                '()': 'app.settings.IgnoreDisallowedHostFilter',
+            },
         },
-    },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'filters': ['ignore_disallowed_host'],
+        'handlers': {
+            'console': {
+                'level': 'DEBUG',
+                'class': 'logging.StreamHandler',
+                'filters': ['ignore_disallowed_host'],
+            },
         },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+            'django.security': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'filters': ['ignore_disallowed_host'],
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'filters': ['ignore_disallowed_host'],
+                'propagate': False,
+            },
         },
-        'django.security': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'filters': ['ignore_disallowed_host'],
-            'propagate': False,
-        },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'filters': ['ignore_disallowed_host'],
-            'propagate': False,
-        },
-    },
-}
+    }
