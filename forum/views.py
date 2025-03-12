@@ -172,7 +172,7 @@ class ThreadView(BaseContentView):
         dao_slug = self.kwargs.get("slug")
         print(f"dao slug: {dao_slug}")
 
-        thread = Thread.objects.filter(dao__slug=dao_slug)
+        thread = Thread.objects.filter(dao__slug=dao_slug).order_by('-created_at')
         return thread
 
 
