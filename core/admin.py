@@ -9,7 +9,7 @@ class UserAdmin(BaseUserAdmin):
     """define the admin pages for user"""
 
     ordering = ["id"]
-    list_display = ["id", "nickname", "list_daos"]
+    list_display = ["id", "nickname", "list_daos", "eth_address"]
     readonly_fields = ["last_seen", "date_joined", "image"]
     search_fields = ["eth_address", "nickname"]
     fieldsets = (
