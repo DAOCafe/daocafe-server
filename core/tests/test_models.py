@@ -84,7 +84,8 @@ class ModelTests(
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
-        self.assertEqual(user.eth_address, eth_address)
+        # Ethereum addresses are now normalized to lowercase
+        self.assertEqual(user.eth_address, eth_address.lower())
 
     """TESTING ETH ADDRESS VALID """
 
@@ -92,7 +93,8 @@ class ModelTests(
         """test validate eth address format"""
         eth_address = generate_test_eth_address()
 
-        self.assertEqual(eth_regex(eth_address), eth_address)
+        # Ethereum addresses are now normalized to lowercase by the validator
+        self.assertEqual(eth_regex(eth_address), eth_address.lower())
 
     def test_invalid_eth_address(self):
         """test invalid eth address not valid"""
