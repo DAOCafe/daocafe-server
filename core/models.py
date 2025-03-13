@@ -18,6 +18,10 @@ class UserManager(BaseUserManager):
 
         if not eth_address:
             raise ValueError("eth address is required")
+        
+        # Normalize eth_address to lowercase
+        eth_address = eth_address.lower()
+        
         email = extra_fields.get("email", None)
         if email is not None:
             extra_fields["email"] = self.normalize_email(email)
@@ -84,6 +88,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.nickname or self.eth_address
+
+    def save(self, *args, **kwargs):
+        """Override save method to ensure eth_address is always lowercase"""
+        if self.eth_address:
+            self.eth_address = self.eth_address.lower()
+        super().save(*args, **kwargs)
 
     def has_usable_password(self):
         """override to allow login without password for non-staff users"""
