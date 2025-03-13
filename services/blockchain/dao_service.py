@@ -36,6 +36,12 @@ class DaoConfirmationService(BlockchainClient):
 
     def _get_initial_data(self) -> dict:
         # set block range
+        print(f"DEBUG: Searching for DAO with address: {self.dao_address}")
+        print(f"DEBUG: Block range - from: {self.from_block}, to: {self.current_block}")
+        print(f"DEBUG: Network ID: {self.network}")
+        
+        factory_address = self.get_factory_address(self.network)
+        print(f"DEBUG: Factory address for network {self.network}: {factory_address}")
 
         # get event signature
         event_signature = (
@@ -47,23 +53,37 @@ class DaoConfirmationService(BlockchainClient):
         if not event_signature:
             logger.error(f"invalid event signature")
             raise
+        
+        print(f"DEBUG: Event signature: {event_signature}")
+
+        dao_topic = "0x" + Web3.to_checksum_address(self.dao_address).lower()[2:].zfill(64)
+        print(f"DEBUG: DAO topic: {dao_topic}")
 
         # define filter parameters
         filter_params = {
             "fromBlock": self.from_block,
             "toBlock": self.current_block,
-            "address": Web3.to_checksum_address(self.get_factory_address(self.network)),
+            "address": Web3.to_checksum_address(factory_address),
             "topics": [
                 Web3.to_hex(hexstr=event_signature),
-                "0x" + Web3.to_checksum_address(self.dao_address).lower()[2:].zfill(64),
+                dao_topic,
             ],
         }
+        
+        print(f"DEBUG: Filter parameters: {filter_params}")
 
+        print("DEBUG: Attempting to get logs with the above parameters...")
         logs = self.web3.eth.get_logs(filter_params)
+        print(f"DEBUG: Log retrieval result - logs found: {bool(logs)}, count: {len(logs) if logs else 0}")
         if not logs:
             logger.error("no logs found for set parameters")
+            print("DEBUG: No logs found. This could be due to:")
+            print("  - The DAO address doesn't exist on this network")
+            print("  - The DAO was created outside the block range being searched")
+            print("  - The factory address is incorrect for this network")
+            print("  - The event signature or topic format is incorrect")
             raise Exception(
-                {"no logs found for set parameters"}, status.HTTP_404_NOT_FOUND
+                "DAO not found. Please verify your DAO address and try again.", status.HTTP_404_NOT_FOUND
             )
         logger.info(f"found {len(logs)} for params")
 
