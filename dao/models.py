@@ -142,3 +142,13 @@ class PresaleTransaction(models.Model):
             models.Index(fields=["block_number"]),
         ]
         ordering = ['-timestamp']  # Default ordering from newest to oldest
+
+
+class Treasury(models.Model):
+    """Model to store treasury balances"""
+    dao = models.OneToOneField(Dao, on_delete=models.CASCADE, related_name="treasury_balance")
+    balances = models.JSONField(default=dict, help_text="Token balances with addresses as keys")
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        indexes = [models.Index(fields=["dao"])]

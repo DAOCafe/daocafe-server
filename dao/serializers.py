@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 # CUSTOM MODULES
 from core.validators.eth_network_validator import validate_network
-from .models import Dao, Contract, Stake, Presale, PresaleStatus, PresaleTransaction
+from .models import Dao, Contract, Stake, Presale, PresaleStatus, PresaleTransaction, Treasury
 from .packages.services.dao_service import DaoService
 from .packages.services.stake_service import StakeService
 from services.blockchain.dao_service import DaoConfirmationService
@@ -211,6 +211,8 @@ class DaoActiveSerializer(serializers.ModelSerializer):
     contracts = serializers.SerializerMethodField()
     stake = serializers.SerializerMethodField()
     user_stake = serializers.SerializerMethodField()
+    treasury = serializers.SerializerMethodField()
+    circulating_supply = serializers.SerializerMethodField()
 
     class Meta:
         model = Dao
@@ -233,6 +235,8 @@ class DaoActiveSerializer(serializers.ModelSerializer):
             "contracts",
             "stake",
             "user_stake",
+            "treasury",
+            "circulating_supply",
         ]
         read_only_fields = fields
 
@@ -248,9 +252,32 @@ class DaoActiveSerializer(serializers.ModelSerializer):
         ]
 
     def get_stake(self, obj):
+        # Get top 5 stakers
+        top_stakers = []
+        top_stakes = obj.dao_stakers.order_by('-amount')[:5]
+        
+        request = self.context.get('request')
+        for stake in top_stakes:
+            staker_data = {
+                "user": stake.user.nickname,
+                "amount": str(stake.amount),
+            }
+            
+            # Add user image if available
+            if stake.user.image:
+                if request is not None:
+                    staker_data["image"] = request.build_absolute_uri(stake.user.image.url)
+                else:
+                    staker_data["image"] = stake.user.image.url
+            else:
+                staker_data["image"] = None
+                
+            top_stakers.append(staker_data)
+        
         return {
             "staker_count": str(obj.staker_count),
             "total_staked": str(obj.total_staked),
+            "top_stakers": top_stakers
         }
 
     def get_user_stake(self, obj):
@@ -263,6 +290,38 @@ class DaoActiveSerializer(serializers.ModelSerializer):
                     "voting_power": str(stake.voting_power),
                 }
         return {"has_staked": "0", "voting_power": "0"}
+        
+    def get_treasury(self, obj):
+        """Get the treasury balance for the DAO"""
+        try:
+            treasury = obj.treasury_balance
+            return treasury.balances
+        except Treasury.DoesNotExist:
+            # If no treasury exists, return empty balances
+            ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+            contract = obj.contracts.first()
+            if contract:
+                return {
+                    contract.token_address: "0",
+                    ZERO_ADDRESS: "0"
+                }
+            return {}
+    
+    def get_circulating_supply(self, obj):
+        """Calculate the circulating supply as total_supply minus treasury token balance"""
+        try:
+            treasury = obj.treasury_balance
+            total_supply = obj.total_supply or 0
+            
+            # Get the DAO token balance
+            contract = obj.contracts.first()
+            if contract and contract.token_address in treasury.balances:
+                token_balance = int(treasury.balances.get(contract.token_address, 0))
+                circulating = max(0, total_supply - token_balance)
+                return str(circulating)
+            return str(total_supply)
+        except (Treasury.DoesNotExist, AttributeError):
+            return str(obj.total_supply or 0)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

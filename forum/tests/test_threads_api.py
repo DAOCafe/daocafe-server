@@ -128,6 +128,30 @@ class ThreadAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for key in self.pagination_keys:
             self.assertIn(key, response.data["data"])
+            
+    def test_replies_are_ordered_chronologically_oldest_to_newest(self):
+        # Create multiple replies
+        for i in range(3):
+            response = self.client.post(
+                f"{self.url_prefix}{self.thread.id}/replies/",
+                self.payload,
+                format="json",
+                **self.HTTP_AUTHORIZATION,
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Get all replies
+        response = self.client.get(f"{self.url_prefix}{self.thread.id}/replies/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check if replies are ordered by created_at in ascending order (oldest first)
+        results = response.data["data"]["results"]
+        if len(results) >= 2:  # Only check if we have at least 2 results
+            for i in range(len(results) - 1):
+                current_date = parse_datetime(results[i]["created_at"])
+                next_date = parse_datetime(results[i + 1]["created_at"])
+                self.assertLessEqual(current_date, next_date, 
+                                    "Replies should be ordered from oldest to newest")
 
     def test_replies_post_successful(self):
         response = self.client.post(

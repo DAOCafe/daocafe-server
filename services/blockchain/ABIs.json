@@ -20,6 +20,13 @@
       "name": "name",
       "outputs": [{ "name": "", "type": "string" }],
       "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [{"name": "owner", "type": "address"}],
+      "name": "balanceOf",
+      "outputs": [{"name": "", "type": "uint256"}],
+      "type": "function"
     }
   ],
   "staking_abi": [

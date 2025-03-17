@@ -1,6 +1,7 @@
-from dao.models import Dao, Presale, PresaleStatus
+from dao.models import Dao, Presale, PresaleStatus, Treasury
 from forum.models import Dip, DipStatus, ProposalType
 from services.blockchain.dip_service import DipConfirmationService
+from services.blockchain.treasury_service import TreasuryService
 from dao.packages.services.presale_service import PresaleService
 from datetime import datetime
 from django.shortcuts import get_object_or_404
@@ -136,32 +137,37 @@ class UpdateStatus:
             ):
                 dip.status = DipStatus.FAILED
             elif status is not None:
-                # If proposal is executed and it's a presale proposal, create Presale instance
-                if status == DipStatus.EXECUTED and int(dip.proposal_type) == int(ProposalType.PRESALE):
-                    self.create_presale_instance(dip, contract, proposal_id)
-                # If proposal is executed and it's a presale withdraw proposal, set presale status to COMPLETED
-                elif status == DipStatus.EXECUTED and int(dip.proposal_type) == int(ProposalType.PRESALE_WITHDRAW):
-                    # Get the presale contract address from the proposal data
-                    presale_contract_address = None
-                    if dip.proposal_data and "presale_contract" in dip.proposal_data:
-                        presale_contract_address = dip.proposal_data["presale_contract"]
+                # If the proposal is executed, update the treasury balance
+                if status == DipStatus.EXECUTED:
+                    # Update treasury balance for the DAO
+                    self.update_treasury_balance(dip.dao)
                     
-                    if presale_contract_address:
-                        # Find the presale instance with this contract address
-                        presale = Presale.objects.filter(
-                            dao_id=dip.dao_id,
-                            presale_contract__iexact=presale_contract_address
-                        ).first()
+                    # If proposal is executed and it's a presale proposal, create Presale instance
+                    if int(dip.proposal_type) == int(ProposalType.PRESALE):
+                        self.create_presale_instance(dip, contract, proposal_id)
+                    # If proposal is executed and it's a presale withdraw proposal, set presale status to COMPLETED
+                    elif int(dip.proposal_type) == int(ProposalType.PRESALE_WITHDRAW):
+                        # Get the presale contract address from the proposal data
+                        presale_contract_address = None
+                        if dip.proposal_data and "presale_contract" in dip.proposal_data:
+                            presale_contract_address = dip.proposal_data["presale_contract"]
                         
-                        if presale:
-                            # Update status to COMPLETED
-                            presale.status = PresaleStatus.COMPLETED
-                            presale.save()
-                            logger.info(f"Updated presale status to COMPLETED for presale {presale.id} with contract {presale_contract_address} after Presale Withdraw execution")
+                        if presale_contract_address:
+                            # Find the presale instance with this contract address
+                            presale = Presale.objects.filter(
+                                dao_id=dip.dao_id,
+                                presale_contract__iexact=presale_contract_address
+                            ).first()
+                            
+                            if presale:
+                                # Update status to COMPLETED
+                                presale.status = PresaleStatus.COMPLETED
+                                presale.save()
+                                logger.info(f"Updated presale status to COMPLETED for presale {presale.id} with contract {presale_contract_address} after Presale Withdraw execution")
+                            else:
+                                logger.warning(f"No presale found with contract address {presale_contract_address} for DAO {dip.dao_id}")
                         else:
-                            logger.warning(f"No presale found with contract address {presale_contract_address} for DAO {dip.dao_id}")
-                    else:
-                        logger.warning(f"No presale contract address found in proposal data for DIP {dip.id}")
+                            logger.warning(f"No presale contract address found in proposal data for DIP {dip.id}")
                 
                 dip.status = status
 
@@ -174,3 +180,37 @@ class UpdateStatus:
             True: DipStatus.EXECUTED,
         }
         return status_map.get(executed_state)
+        
+    def update_treasury_balance(self, dao):
+        """Update the treasury balance for a DAO"""
+        try:
+            contract = dao.contracts.first()
+            if not contract:
+                logger.warning(f"No contract found for DAO {dao.id}")
+                return
+                
+            treasury_service = TreasuryService(
+                treasury_address=contract.treasury_address,
+                network=contract.network
+            )
+            
+            # Get balances
+            ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+            token_balance = treasury_service.get_token_balance(contract.token_address)
+            native_balance = treasury_service.get_native_balance()
+            
+            # Create or update treasury with balances
+            treasury, created = Treasury.objects.update_or_create(
+                dao=dao,
+                defaults={
+                    'balances': {
+                        contract.token_address: str(token_balance),
+                        ZERO_ADDRESS: str(native_balance)
+                    }
+                }
+            )
+            
+            logger.info(f"Updated treasury balances for DAO {dao.id}: token={token_balance}, native={native_balance}")
+            
+        except Exception as ex:
+            logger.error(f"Failed to update treasury balance: {str(ex)}")

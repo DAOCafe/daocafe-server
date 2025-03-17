@@ -179,6 +179,11 @@ class ThreadView(BaseContentView):
 @extend_schema(tags=["thread"])
 class ThreadReplyView(BaseReplyContentView):
     model = Thread
+    
+    def get_queryset(self):
+        """Override to order replies chronologically from oldest to newest"""
+        queryset = super().get_queryset()
+        return queryset.order_by('created_at')
 
 
 @extend_schema(tags=["thread"])
@@ -201,6 +206,11 @@ class ReplyLikeView(BaseLikeContentView):
 @extend_schema(tags=["dip"])
 class DipReplyView(BaseReplyContentView):
     model = Dip
+    
+    def get_queryset(self):
+        """Override to order replies chronologically from oldest to newest"""
+        queryset = super().get_queryset()
+        return queryset.order_by('created_at')
 
 
 @extend_schema(tags=["dip"])
