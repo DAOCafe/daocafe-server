@@ -1,6 +1,7 @@
 import time, os, json
 from web3 import Web3
 from logging_config import logger
+from django.conf import settings
 
 
 class BlockchainClient:
@@ -17,24 +18,25 @@ class BlockchainClient:
         )
         self.web3 = self.connect()
         self.current_block = self.web3.eth.block_number
-        self.from_block = max(0, self.current_block - 100000)
+        self.block_range = getattr(settings, 'BLOCKCHAIN_SCAN_BLOCK_RANGE', 10000)
+        self.from_block = max(0, self.current_block - self.block_range)
 
     def connect(self):
         provider_url = self.get_provider(self.network)
         logged_url = provider_url
         
-        # Add Ankr API key as a query parameter if available
-        ankr_api_key = os.environ.get("ANKR_PROJECT_ID")
-        if ankr_api_key and "ankr.com" in provider_url:
-            provider_url = f"{provider_url}?apiKey={ankr_api_key}"
-            logged_url = f"{provider_url.split('?')[0]}?apiKey=***"
+        # Add DRPC API key as a query parameter
+        drpc_api_key = os.environ.get("DRPC_API_KEY")
+        if drpc_api_key and "drpc.org" in provider_url:
+            provider_url = f"{provider_url}&dkey={drpc_api_key}"
+            logged_url = f"{provider_url.split('&dkey=')[0]}&dkey=***"
         
         logger.info(f"Attempting to connect to network {self.network} using provider: {logged_url}")
         
-        # Remove the API key check since it's now optional
-        # if "api_key" in provider_url and not os.environ.get("ANKR_PROJECT_ID"):
-        #     logger.error("ANKR_PROJECT_ID environment variable is not set")
-        #     raise ConnectionError("ANKR_PROJECT_ID environment variable is required but not set")
+        # Check if DRPC API key is set
+        if "drpc.org" in provider_url and not drpc_api_key:
+            logger.error("DRPC_API_KEY environment variable is not set")
+            raise ConnectionError("DRPC_API_KEY environment variable is required but not set")
 
         web3 = None
         for attempt in range(1, self.retries + 1):
@@ -53,7 +55,7 @@ class BlockchainClient:
 
                 web3 = Web3(provider)
                 if web3.is_connected():
-                    logger.info(f"Connection with chain {self.network} established successfully")
+                    logger.info(f"Connection with chain {self.network} established successfully. Sleep 15 seconds")
                     return web3
                 else:
                     logger.warning(f"Connection attempt {attempt} failed: Web3 could not connect to RPC endpoint")
@@ -70,14 +72,18 @@ class BlockchainClient:
     @staticmethod
     def get_provider(network):
         provider_urls = {
-            1: "https://rpc.ankr.com/eth",
-            5: "https://rpc.ankr.com/eth_goerli",
-            10: "https://rpc.ankr.com/optimism",
-            56: "https://rpc.ankr.com/bsc",
-            137: "https://rpc.ankr.com/polygon",
-            42161: "https://rpc.ankr.com/arbitrum",
-            11155111: "https://rpc.ankr.com/eth_sepolia",
-            1337: "http://host.docker.internal:8545",
+            1: "https://lb.drpc.org/ogrpc?network=ethereum",
+            5: "https://lb.drpc.org/ogrpc?network=goerli",
+            10: "https://lb.drpc.org/ogrpc?network=optimism",
+            56: "https://lb.drpc.org/ogrpc?network=bsc",
+            100: "https://lb.drpc.org/ogrpc?network=gnosis",
+            130: "https://lb.drpc.org/ogrpc?network=unichain",
+            137: "https://lb.drpc.org/ogrpc?network=polygon",
+            480: "https://lb.drpc.org/ogrpc?network=worldchain",
+            8453: "https://lb.drpc.org/ogrpc?network=base",
+            42161: "https://lb.drpc.org/ogrpc?network=arbitrum",
+            11155111: "https://lb.drpc.org/ogrpc?network=sepolia",
+            31337: "http://host.docker.internal:8545",
         }
 
         if network not in provider_urls:

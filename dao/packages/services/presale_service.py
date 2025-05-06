@@ -3,6 +3,7 @@ from logging_config import logger
 from dao.models import Presale, PresaleStatus, PresaleTransaction
 from core.models import User
 from services.blockchain.blockchain_client import BlockchainClient
+import time
 
 
 class PresaleService(BlockchainClient):
@@ -37,7 +38,7 @@ class PresaleService(BlockchainClient):
             # Create contract instance
             contract_address = Web3.to_checksum_address(presale_instance.presale_contract)
             contract = self.web3.eth.contract(address=contract_address, abi=presale_abi)
-            
+                        
             # Call getPresaleState function
             state = contract.functions.getPresaleState().call()
             
@@ -102,6 +103,10 @@ class PresaleService(BlockchainClient):
             
             # Get current block
             to_block = self.web3.eth.block_number
+            
+            # Wait 15 seconds before fetching blockchain data to allow transaction propagation
+            logger.info("Waiting 15 seconds before fetching presale events from blockchain...")
+            time.sleep(15)
             
             logger.info(f"Fetching presale events from block {from_block} to {to_block}")
             

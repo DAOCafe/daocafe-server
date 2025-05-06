@@ -254,7 +254,7 @@ CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 CELERY_TIMEZONE = "UTC"
 
 # Blockchain settings
-BLOCKCHAIN_SCAN_BLOCK_RANGE = 10000  # Default number of blocks to scan for events
+BLOCKCHAIN_SCAN_BLOCK_RANGE = 100000  # Default number of blocks to scan for events
 
 # HTTPS settings
 # Tell Django to trust the X-Forwarded-Proto header from the proxy

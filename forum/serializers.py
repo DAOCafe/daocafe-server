@@ -210,15 +210,15 @@ class DipSerializer(BaseForumSerializer):
         }
         return type_map.get(value)
 
-    def validate(self, data):
-        amount = data.get("proposal_data", {}).get("amount")
+    # def validate(self, data):
+    #     amount = data.get("proposal_data", {}).get("amount")
 
-        if amount is not None:
-            amount = int(amount) * 10**18
+    #     if amount is not None:
+    #         amount = int(amount) * 10**18
 
-            data["proposal_data"]["amount"] = amount
+    #         data["proposal_data"]["amount"] = amount
 
-        return data
+    #     return data
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

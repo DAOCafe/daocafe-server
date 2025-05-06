@@ -16,9 +16,10 @@ class DaoService:
         Returns:
             Contract: the created contract object
         """
-        # Check if a Contract with this dao_address already exists
+        # Check if a Contract with this dao_address and network already exists
         existing_contract = Contract.objects.filter(
-            dao_address=chain_data["dao_address"]
+            dao_address=chain_data["dao_address"],
+            dao__network=chain_data["network"]
         ).first()
         
         if existing_contract:

@@ -1,6 +1,7 @@
 from dao.models import Dao, Presale, PresaleStatus, Treasury
 from forum.models import Dip, DipStatus, ProposalType
 from services.blockchain.dip_service import DipConfirmationService
+from services.blockchain.dao_service import DaoConfirmationService
 from services.blockchain.treasury_service import TreasuryService
 from dao.packages.services.presale_service import PresaleService
 from datetime import datetime
@@ -8,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from forum.tasks import sync_votes_task
 from logging_config import logger
 from web3 import Web3
+import time
 
 
 class UpdateStatus:
@@ -59,6 +61,9 @@ class UpdateStatus:
             web3 = dip_service.web3
             dao_contract = web3.eth.contract(address=Web3.to_checksum_address(contract.dao_address), abi=dao_abi)
             
+            # Wait 15 seconds before fetching blockchain data to allow transaction propagation
+            logger.info("Waiting 15 seconds before fetching presale contract from blockchain...")
+            time.sleep(15)
             # Call getPresaleContract function
             presale_contract = dao_contract.functions.getPresaleContract(proposal_id).call()
             
@@ -109,6 +114,9 @@ class UpdateStatus:
 
         dip_service = DipConfirmationService(dao_address=contract.dao_address, network=contract.network)
         
+        # Wait 15 seconds before fetching blockchain data to allow transaction propagation
+        logger.info("Waiting 15 seconds before fetching proposal status from blockchain...")
+        time.sleep(15)
         proposal = dip_service.get_proposals(proposal_id=proposal_id)
         if not proposal:
             raise ValueError("no proposal data found")
@@ -131,45 +139,102 @@ class UpdateStatus:
             logger.info(
                 f"Votes for: {proposal.get('for_votes')}, votes against: {proposal.get('against_votes')}"
             )
+            
+            # Check if there are any votes
             if (
                 proposal.get("for_votes", 0) == 0
                 and proposal.get("against_votes", 0) == 0
             ):
                 dip.status = DipStatus.FAILED
-            elif status is not None:
-                # If the proposal is executed, update the treasury balance
-                if status == DipStatus.EXECUTED:
-                    # Update treasury balance for the DAO
-                    self.update_treasury_balance(dip.dao)
-                    
-                    # If proposal is executed and it's a presale proposal, create Presale instance
-                    if int(dip.proposal_type) == int(ProposalType.PRESALE):
-                        self.create_presale_instance(dip, contract, proposal_id)
-                    # If proposal is executed and it's a presale withdraw proposal, set presale status to COMPLETED
-                    elif int(dip.proposal_type) == int(ProposalType.PRESALE_WITHDRAW):
-                        # Get the presale contract address from the proposal data
-                        presale_contract_address = None
-                        if dip.proposal_data and "presale_contract" in dip.proposal_data:
-                            presale_contract_address = dip.proposal_data["presale_contract"]
-                        
-                        if presale_contract_address:
-                            # Find the presale instance with this contract address
-                            presale = Presale.objects.filter(
-                                dao_id=dip.dao_id,
-                                presale_contract__iexact=presale_contract_address
-                            ).first()
-                            
-                            if presale:
-                                # Update status to COMPLETED
-                                presale.status = PresaleStatus.COMPLETED
-                                presale.save()
-                                logger.info(f"Updated presale status to COMPLETED for presale {presale.id} with contract {presale_contract_address} after Presale Withdraw execution")
-                            else:
-                                logger.warning(f"No presale found with contract address {presale_contract_address} for DAO {dip.dao_id}")
-                        else:
-                            logger.warning(f"No presale contract address found in proposal data for DIP {dip.id}")
+                logger.info(f"Proposal {proposal_id} failed due to no votes")
+            else:
+                # Check for quorum
+                # Get the staking contract address
+                staking_address = contract.staking_address
                 
-                dip.status = status
+                # Create a blockchain service to interact with the staking contract
+                blockchain_service = DaoConfirmationService(
+                    dao_address=contract.dao_address, 
+                    network=contract.network
+                )
+                
+                try:
+                    # Wait 15 seconds before fetching blockchain data to allow transaction propagation
+                    logger.info("Waiting 15 seconds before fetching staking data from blockchain...")
+                    time.sleep(15)
+                    
+                    # Get the total staked amount
+                    total_staked = blockchain_service.get_total_staked(staking_address)
+                    
+                    # Get the quorum threshold from the DAO contract
+                    quorum_threshold = blockchain_service.get_quorum_threshold(contract.dao_address)
+                    
+                    # Calculate total votes
+                    total_votes = int(proposal.get("for_votes", 0)) + int(proposal.get("against_votes", 0))
+                    
+                    # Check if quorum is reached
+                    quorum_reached = False
+                    quorum_percentage = 0
+                    
+                    if total_staked > 0:
+                        quorum_percentage = (total_votes * 10000) // total_staked
+                        quorum_reached = quorum_percentage >= quorum_threshold
+                    
+                    logger.info(f"Quorum check: {quorum_percentage}/{quorum_threshold} - {'Reached' if quorum_reached else 'Not reached'}")
+                    
+                    if not quorum_reached:
+                        dip.status = DipStatus.FAILED
+                        logger.info(f"Proposal {proposal_id} failed due to insufficient quorum")
+                    elif status is not None:
+                        # If the proposal is executed, update the treasury balance
+                        if status == DipStatus.EXECUTED:
+                            # Update treasury balance for the DAO
+                            self.update_treasury_balance(dip.dao)
+                            
+                            # If proposal is executed and it's a presale proposal, create Presale instance
+                            if int(dip.proposal_type) == int(ProposalType.PRESALE):
+                                self.create_presale_instance(dip, contract, proposal_id)
+                            # If proposal is executed and it's a presale withdraw proposal, set presale status to COMPLETED
+                            elif int(dip.proposal_type) == int(ProposalType.PRESALE_WITHDRAW):
+                                # Get the presale contract address from the proposal data
+                                presale_contract_address = None
+                                if dip.proposal_data and "presale_contract" in dip.proposal_data:
+                                    presale_contract_address = dip.proposal_data["presale_contract"]
+                                
+                                if presale_contract_address:
+                                    # Find the presale instance with this contract address
+                                    presale = Presale.objects.filter(
+                                        dao_id=dip.dao_id,
+                                        presale_contract__iexact=presale_contract_address
+                                    ).first()
+                                    
+                                    if presale:
+                                        # Update status to COMPLETED
+                                        presale.status = PresaleStatus.COMPLETED
+                                        presale.save()
+                                        logger.info(f"Updated presale status to COMPLETED for presale {presale.id} with contract {presale_contract_address} after Presale Withdraw execution")
+                                    else:
+                                        logger.warning(f"No presale found with contract address {presale_contract_address} for DAO {dip.dao_id}")
+                                else:
+                                    logger.warning(f"No presale contract address found in proposal data for DIP {dip.id}")
+                            # If proposal is executed and it's an upgrade proposal, update the DAO version
+                            elif int(dip.proposal_type) == int(ProposalType.UPGRADE):
+                                # Get the new version from the proposal data
+                                if dip.proposal_data and "version" in dip.proposal_data:
+                                    new_version = dip.proposal_data["version"]
+                                    # Update the DAO version
+                                    dip.dao.version = new_version
+                                    dip.dao.save(update_fields=["version"])
+                                    logger.info(f"Updated DAO version to {new_version} after Upgrade proposal execution")
+                                else:
+                                    logger.warning(f"No version found in proposal data for DIP {dip.id}")
+                        
+                        dip.status = status
+                except Exception as ex:
+                    logger.error(f"Error checking quorum for proposal {proposal_id}: {str(ex)}")
+                    # If there's an error checking quorum, fall back to the original behavior
+                    if status is not None:
+                        dip.status = status
 
             dip.save()
 
@@ -193,7 +258,7 @@ class UpdateStatus:
                 treasury_address=contract.treasury_address,
                 network=contract.network
             )
-            
+                      
             # Get balances
             ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
             token_balance = treasury_service.get_token_balance(contract.token_address)

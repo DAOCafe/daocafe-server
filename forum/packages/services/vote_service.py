@@ -4,6 +4,7 @@ from services.blockchain.dao_service import DaoConfirmationService
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db import transaction
+import time
 
 # from django.conf import settings
 from logging_config import logger
@@ -31,6 +32,9 @@ class VoteService:
 
         blockchain_service = DaoConfirmationService(dao_address=contracts.dao_address, network=contracts.network)
 
+        # Wait 15 seconds before fetching blockchain data to allow transaction propagation
+        logger.info("Waiting 15 seconds before fetching vote data from blockchain...")
+        time.sleep(15)
         votes_from_chain = blockchain_service.start_vote_sync_process(dip.proposal_id)
 
         if votes_from_chain is None:

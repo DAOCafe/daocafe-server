@@ -8,13 +8,16 @@ def validate_network(chain_id):
         137: "Polygon",
         250: "Fantom",
         100: "Gnosis",
+        130: "Unichain",
+        480: "World Chain",
+        8453: "Base",
         43114: "Avalanche",
         42161: "Arbitrum",
         3: "Ropsten",
         4: "Rinkeby",
         5: "Goerli",
         11155111: "Sepolia",
-        1337: "Hardhat",
+        31337: "Hardhat",
         10: "Optimism",
     }
     if chain_id not in VALID_NETWORKS:
