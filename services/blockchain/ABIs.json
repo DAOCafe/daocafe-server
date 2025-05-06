@@ -1,4 +1,16 @@
 {
+  "erc1271_abi": [
+    {
+      "inputs": [
+        {"internalType": "bytes32", "name": "hash", "type": "bytes32"},
+        {"internalType": "bytes", "name": "signature", "type": "bytes"}
+      ],
+      "name": "isValidSignature",
+      "outputs": [{"internalType": "bytes4", "name": "magicValue", "type": "bytes4"}],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
   "dao_abi": [
     {
       "constant": true,
@@ -43,6 +55,13 @@
       "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
       "stateMutability": "view",
       "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalStaked",
+      "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
     }
   ],
   "dip_abi": [
@@ -59,6 +78,13 @@
         { "type": "uint8", "name": "contractToUpgrade", "indexed": false },
         { "type": "string", "name": "newVersion", "indexed": false }
       ]
+    },
+    {
+      "inputs": [],
+      "name": "quorum",
+      "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [

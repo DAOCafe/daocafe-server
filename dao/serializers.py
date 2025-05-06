@@ -51,7 +51,6 @@ class DaoInitialSerializer(serializers.ModelSerializer):
         blockchain_service = DaoConfirmationService(
             dao_address=validated_data["dao_address"], network=validated_data["network"]
         )
-
         data_from_chain = blockchain_service._get_initial_data()
         data_from_chain["network"] = validated_data["network"]
         logger.info(f"user {self.context['request'].user.eth_address}")

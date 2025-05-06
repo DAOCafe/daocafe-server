@@ -49,7 +49,7 @@ class DipSyncronizationService:
                     and blockchain_data["amount"] == db_amount
                 )
             elif proposal_type == 1:  # Upgrade
-                result = blockchain_data["version"] == db_proposal_data["version"]
+                result = blockchain_data["version"] == db_proposal_data["newVersion"]
             elif proposal_type == 2:  # Module Upgrade
                 result = (
                     blockchain_data["module_address"].lower() == db_proposal_data["module_address"].lower()
@@ -103,8 +103,9 @@ class DipSyncronizationService:
                     "proposal_id", flat=True
                 )
             )
-            logger.debug("Waiting 5 seconds before fetching blockchain data...")
-            time.sleep(5)
+            # Wait 15 seconds before fetching blockchain data to allow transaction propagation
+            logger.info("Waiting 15 seconds before fetching blockchain data...")
+            time.sleep(15)
             proposals = self.dip_service.get_proposal_data(
                 excluded_proposals=existing_proposal_ids
             )
