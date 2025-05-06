@@ -24,7 +24,7 @@ class PresaleAPITest(APITestCase):
 
         # Create base objects for testing
         cls.dao_base = DaoBaseMixin(owner=cls.user)
-        cls.dao = cls.dao_base.create_dao()
+        cls.dao = cls.dao_base.create_dao(network=11155111)
         cls.presale_base = PresaleFactoryMixin(owner=cls.user)
         cls.presale = cls.presale_base.create_presale(cls.dao)
 
@@ -91,9 +91,9 @@ class PresaleAPITest(APITestCase):
     @patch("dao.packages.services.presale_service.PresaleService.fetch_presale_events")
     def test_presale_refresh_successful(self, mock_fetch_events, mock_update_state):
 
-        dao_service = DaoFactoryMixin()
+        dao_factory = DaoFactoryMixin()
 
-        dao = dao_service.create_dao(slug="poppy")
+        dao = dao_factory.create_dao(slug="poppy", network=11155111)
 
         presale = Presale.objects.create(
             dao=dao,
@@ -125,7 +125,7 @@ class PresaleAPITest(APITestCase):
     @patch("dao.packages.services.presale_service.PresaleService.update_presale_state")
     def test_presale_refresh_failure(self, mock_update_state):
         dao_factory = DaoFactoryMixin()
-        dao_with_contract = dao_factory.create_dao(slug="newslug")
+        dao_with_contract = dao_factory.create_dao(slug="newslug", network=11155111)
         presale = Presale.objects.create(
             dao=dao_with_contract,
             presale_contract="0x1234567890123456789012345678901234567890",
@@ -213,7 +213,7 @@ class PresaleAPITest(APITestCase):
 
     def test_presale_status_update(self):
         """Test that presale status is updated when total_remaining becomes zero"""
-        test_dao = self.dao_base.create_dao(slug="statusdao")
+        test_dao = self.dao_base.create_dao(slug="statusdao", network=11155111)
         presale = Presale.objects.create(
             dao=test_dao,
             presale_contract="0x1234567890123456789012345678901234567890",
@@ -238,7 +238,7 @@ class PresaleAPITest(APITestCase):
             mock_update.side_effect = update_status
 
             dao_factory = DaoFactoryMixin()
-            dao_with_contract = dao_factory.create_dao(slug="womin")
+            dao_with_contract = dao_factory.create_dao(slug="womin", network=11155111)
             presale.dao = dao_with_contract
             presale.save()
 
@@ -250,7 +250,7 @@ class PresaleAPITest(APITestCase):
 
     def test_presale_transactions_empty(self):
         """Test that an empty list is returned when a presale has no transactions"""
-        test_dao = self.dao_base.create_dao(slug="emptydao")
+        test_dao = self.dao_base.create_dao(slug="emptydao", network=11155111)
         empty_presale = Presale.objects.create(
             dao=test_dao,
             presale_contract="0x1234567890123456789012345678901234567890",
@@ -299,7 +299,7 @@ class PresaleAPITest(APITestCase):
     def test_presale_refresh_with_new_transaction(self, mock_fetch_events):
         """Test that new transactions are processed during a presale refresh"""
         dao_factory = DaoFactoryMixin()
-        dao_with_contract = dao_factory.create_dao(slug="newslug")
+        dao_with_contract = dao_factory.create_dao(slug="newslug", network=11155111)
         presale = Presale.objects.create(
             dao=dao_with_contract,
             presale_contract="0x1234567890123456789012345678901234567890",
@@ -335,7 +335,7 @@ class PresaleAPITest(APITestCase):
 
     def test_presale_with_invalid_contract(self):
         """Test handling of a presale with an invalid contract address"""
-        test_dao = self.dao_base.create_dao(slug="invaliddao")
+        test_dao = self.dao_base.create_dao(slug="invaliddao", network=11155111)
         invalid_presale = Presale.objects.create(
             dao=test_dao,
             presale_contract="invalid_address",
@@ -350,7 +350,7 @@ class PresaleAPITest(APITestCase):
             mock_update.side_effect = Exception("Invalid contract address")
 
             dao_factory = DaoFactoryMixin()
-            dao_with_contract = dao_factory.create_dao(slug="kaisa")
+            dao_with_contract = dao_factory.create_dao(slug="kaisa", network=11155111)
             invalid_presale.dao = dao_with_contract
             invalid_presale.save()
 
@@ -367,7 +367,7 @@ class PresaleAPITest(APITestCase):
 
     def test_presale_refresh_authentication_required(self):
         """Test that authentication is required for presale refresh"""
-        test_dao = self.dao_base.create_dao(slug="authdao")
+        test_dao = self.dao_base.create_dao(slug="authdao", network=11155111)
         presale = Presale.objects.create(
             dao=test_dao,
             presale_contract="0x1234567890123456789012345678901234567890",
@@ -382,7 +382,7 @@ class PresaleAPITest(APITestCase):
 
     def test_presale_paused_status(self):
         """Test presale with PAUSED status"""
-        test_dao = self.dao_base.create_dao(slug="pauseddao")
+        test_dao = self.dao_base.create_dao(slug="pauseddao", network=11155111)
         paused_presale = Presale.objects.create(
             dao=test_dao,
             presale_contract="0x1234567890123456789012345678901234567890",
@@ -399,7 +399,7 @@ class PresaleAPITest(APITestCase):
     def test_presale_filter_by_status(self):
         """Test filtering presales by status"""
         # self.presale.delete()
-        test_dao = self.dao_base.create_dao(slug="filterdao")
+        test_dao = self.dao_base.create_dao(slug="filterdao", network=11155111)
 
         active_presale = Presale.objects.create(
             dao=test_dao,

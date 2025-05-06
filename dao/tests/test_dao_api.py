@@ -108,6 +108,7 @@ class DaoAPITests(APITestCase):
             "version": "1.0.0",
             "symbol": "TEST",
             "total_supply": "1000000000000000000000000",
+            "network": 11155111,
         }
 
         payload = {
@@ -142,6 +143,7 @@ class DaoAPITests(APITestCase):
             "version": "1.0.0",
             "symbol": "TEST",
             "total_supply": "1000000000000000000000000",
+            "network": 11155111,
         }
 
         # First create the DAO through fetch endpoint
