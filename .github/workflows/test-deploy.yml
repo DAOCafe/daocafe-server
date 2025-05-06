@@ -67,6 +67,8 @@ jobs:
           SECRET_KEY: test_secret_key
           DEBUG: 'True'
           REDIS_HOST: localhost
+          DRPC_API_KEY: AjFvmgJ_7Uw7qTxlyHKwHFxw3s3uKkwR8I-eEjfP07KJ
+
         run: |
           python manage.py test
 
